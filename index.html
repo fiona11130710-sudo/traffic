@@ -1,246 +1,415 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>交通</title>
-  <!-- 引入 Bootstrap 5 美化介面 -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { background-color: #f4f6f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    .hero-banner { background: linear-gradient(135deg, #1f3c88 0%, #070d59 100%); color: white; padding: 36px 0; }
-    .image-stage { position: relative; display: inline-block; width: 100%; max-width: 820px; overflow: hidden; border-radius: 8px; background: #000; }
-    .image-stage img { width: 100%; display: block; height: auto; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeRoad AI | YOLOv8 智慧路口安全感知系統</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    /* YOLO 標註框樣式 */
-    .bbox {
-      position: absolute;
-      border: 2px solid;
-      border-radius: 2px;
-      pointer-events: none;
-      box-sizing: border-box;
-      transition: all 0.2s ease-in-out;
-    }
-    .bbox-label {
-      position: absolute;
-      top: -24px;
-      left: -2px;
-      color: white;
-      font-size: 11px;
-      padding: 2px 6px;
-      border-radius: 2px;
-      font-weight: 600;
-      white-space: nowrap;
-      letter-spacing: 0.5px;
-    }
-    
-    /* 依類別設定顏色 */
-    .box-blindspot { border-color: #e63946; background-color: rgba(230, 57, 70, 0.15); }
-    .box-blindspot .bbox-label { background-color: #e63946; }
-    
-    .box-pedestrian { border-color: #ffb703; background-color: rgba(255, 183, 3, 0.18); }
-    .box-pedestrian .bbox-label { background-color: #fb8500; color: #fff; }
-    
-    .box-intersection { border-color: #00b4d8; background-color: rgba(0, 180, 216, 0.15); }
-    .box-intersection .bbox-label { background-color: #0077b6; }
-  </style>
+    <!-- 引入微軟 ONNX Runtime Web 引擎 (直接於瀏覽器運行 YOLO) -->
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.16.3/dist/ort.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 900: '#0c4a6e' },
+                        safe: '#10b981',
+                        alert: '#ef4444',
+                        warn: '#f59e0b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html { scroll-behavior: smooth; }
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+    </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
-  <!-- 頂部橫幅 -->
-  <header class="hero-banner text-center mb-4 shadow">
-    <div class="container">
-      <h2 class="fw-bold mb-1">AI 智慧交通安全辨識系統 (AITS)</h2>
-      <p class="mb-0 text-white-50">無號誌路口偵測・轉角安全視距分析・行人風險評估</p>
-    </div>
-  </header>
-
-  <div class="container mb-5">
-    <div class="row g-4">
-      
-      <!-- 左側：影像推論展示區 -->
-      <div class="col-lg-8">
-        <div class="card shadow-sm border-0">
-          <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <span class="fw-bold text-dark" id="caseTitle">場景偵測結果展示</span>
-            <span class="badge bg-light text-secondary border">YOLOv8 Inference</span>
-          </div>
-          <div class="card-body text-center p-3">
-            <div class="image-stage mx-auto shadow-sm" id="displayStage">
-              <img id="mainImage" src="" alt="檢測影像">
-              <!-- 標註框會由 JavaScript 動態插入 -->
+    <!-- 頂部導覽列 -->
+    <nav class="fixed w-full z-50 glass-nav transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0 flex items-center gap-2 cursor-pointer" onclick="window.scrollTo(0,0)">
+                    <i class="fa-solid fa-shield-halved text-brand-600 text-2xl"></i>
+                    <span class="font-bold text-xl tracking-tight text-slate-900">SafeRoad <span class="text-brand-600">AI</span></span>
+                    <span class="ml-2 text-xs bg-brand-100 text-brand-600 px-2 py-1 rounded-full font-medium">YOLOv8 Web 引擎</span>
+                </div>
+                <div id="engineStatus" class="text-xs px-3 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-full font-semibold">
+                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> YOLOv8 權重載入中...
+                </div>
             </div>
-          </div>
-          <div class="card-footer bg-white border-top-0 pt-0 pb-3">
-            <div class="small fw-bold text-muted mb-2">切換展示案例：</div>
-            <div class="btn-group w-100" role="group">
-              <button type="button" class="btn btn-outline-primary active" id="btn0" onclick="switchCase(0)">
-                案例 1: 住宅巷口視距受阻 (三福街)
-              </button>
-              <button type="button" class="btn btn-outline-primary" id="btn1" onclick="switchCase(1)">
-                案例 2: 校門坡道無號誌交會 (龍華街)
-              </button>
-              <button type="button" class="btn btn-outline-primary" id="btn2" onclick="switchCase(2)">
-                案例 3: 一般道路基準對照
-              </button>
-            </div>
-          </div>
         </div>
-      </div>
+    </nav>
 
-      <!-- 右側：危險分數與指標面板 -->
-      <div class="col-lg-4">
-        <div class="card shadow-sm border-0 mb-3">
-          <div class="card-header bg-white py-3 fw-bold text-dark">
-            即時交通危險等級評估
-          </div>
-          <div class="card-body">
-            <div class="text-center py-2">
-              <div class="text-secondary small fw-semibold">綜合風險指數</div>
-              <h1 class="display-3 fw-bold my-1" id="riskScore">0</h1>
-              <div id="riskBadge" class="badge fs-6 px-3 py-2 mt-1">計算中...</div>
+    <!-- Hero 橫幅區 -->
+    <section class="pt-32 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
+        <div class="md:w-1/2 flex flex-col items-start">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 text-brand-600 text-sm font-semibold mb-6 border border-brand-200">
+                <i class="fa-solid fa-microchip"></i> ONNX Runtime Web 端點推論
             </div>
-
-            <hr class="my-3">
-
-            <h6 class="fw-bold small text-muted text-uppercase mb-2">特徵辨識清單</h6>
-            <ul class="list-group list-group-flush mb-3" id="featureList">
-              <!-- 特徵項目由 JS 動態更新 -->
-            </ul>
-
-            <div class="p-3 bg-light rounded small text-secondary">
-              <div class="fw-bold text-dark mb-1">危險加權規則說明：</div>
-              • 無號誌路口（Unsignalized）：+30 分<br>
-              • 安全視距盲區（Blindspot）：+25 分 / 處<br>
-              • 車道行人穿越（Pedestrian）：+20 分 / 人
-            </div>
-          </div>
+            <h1 class="text-4xl md:text-5xl font-extrabold leading-tight text-slate-900 mb-6">
+                端點即時運行 <br>
+                <span class="text-brand-600">YOLOv8 路口感知架構</span>
+            </h1>
+            <p class="text-lg text-slate-600 mb-8 leading-relaxed">
+                全面捨棄輕量舊架構，改由 <strong>YOLOv8 深度神經網路</strong> 直接於瀏覽器進行多尺度特徵提取，精準感知交通號誌、車輛、機車與行人。
+            </p>
+            <a href="#demo" class="bg-brand-600 text-white px-8 py-3 rounded-full font-bold text-lg hover:bg-brand-700 transition shadow-lg shadow-brand-500/30 flex items-center gap-2">
+                <i class="fa-solid fa-crosshairs"></i> 開始 YOLO 檢測
+            </a>
         </div>
-      </div>
+        <div class="md:w-1/2 w-full">
+            <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200 bg-white p-2">
+                <img src="https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=1000&auto=format&fit=crop" class="w-full h-auto rounded-xl">
+            </div>
+        </div>
+    </section>
 
-    </div>
-  </div>
+    <!-- 核心體驗區 -->
+    <section id="demo" class="py-20 bg-slate-900 text-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            
+            <h2 class="text-3xl font-bold mb-4">即時 YOLOv8 目標辨識</h2>
+            <p class="text-slate-400 mb-8">支援標準街景、無號誌路口上傳，直接在前端運用 YOLOv8 完成推論與路權決策。</p>
 
-  <script>
-    // 預設三個案例的推論數據
-    const demoCases = [
-      {
-        title: "案例 1：新北樹林三福街85巷（無號誌交岔、盲區、行人）",
-        image: "case1.png",
-        boxes: [
-          { label: "intersection (0.91)", type: "box-intersection", top: "52%", left: "32%", width: "38%", height: "36%" },
-          { label: "blindspot (0.94)", type: "box-blindspot", top: "42%", left: "10%", width: "22%", height: "42%" },
-          { label: "pedestrian (0.87)", type: "box-pedestrian", top: "44%", left: "54%", width: "9%", height: "22%" }
-        ],
-        hasIntersection: true,
-        blindspots: 1,
-        pedestrians: 1
-      },
-      {
-        title: "案例 2：校門周邊坡道無號誌交會（黃網線、行人群聚）",
-        image: "case2.png",
-        boxes: [
-          { label: "intersection (0.88)", type: "box-intersection", top: "58%", left: "20%", width: "60%", height: "32%" },
-          { label: "pedestrian (0.83)", type: "box-pedestrian", top: "54%", left: "38%", width: "8%", height: "18%" },
-          { label: "pedestrian (0.79)", type: "box-pedestrian", top: "53%", left: "48%", width: "8%", height: "18%" }
-        ],
-        hasIntersection: true,
-        blindspots: 0,
-        pedestrians: 2
-      },
-      {
-        title: "案例 3：標準市區道路（無風險特徵基準）",
-        image: "對照組-安全.png",
-        boxes: [],
-        hasIntersection: false,
-        blindspots: 0,
-        pedestrians: 0
-      }
-    ];
+            <!-- 拖曳上傳框 -->
+            <div id="dropZone" class="w-full max-w-5xl mx-auto bg-slate-800/80 rounded-2xl p-12 border-2 border-slate-700 border-dashed mb-8 hover:border-brand-500 transition-colors duration-300 relative group cursor-pointer">
+                <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                <div class="flex flex-col items-center pointer-events-none">
+                    <i class="fa-solid fa-cloud-arrow-up text-6xl text-brand-500 mb-4 group-hover:scale-110 transition-transform"></i>
+                    <h3 class="text-2xl font-semibold mb-2">點擊或拖曳照片至此以 YOLO 檢驗</h3>
+                    <p class="text-base text-slate-400">本地 ONNX Runtime 運算，無伺服器延遲</p>
+                </div>
+            </div>
 
-    function switchCase(index) {
-      const data = demoCases[index];
-      const img = document.getElementById("mainImage");
-      const stage = document.getElementById("displayStage");
+            <!-- 載入中動畫 -->
+            <div id="loader" class="hidden my-12">
+                <i class="fa-solid fa-circle-notch fa-spin text-brand-500 text-4xl mb-3"></i>
+                <p class="text-brand-300 font-medium tracking-wide">YOLOv8 深度神經網路推論中...</p>
+            </div>
 
-      // 切換按鈕狀態
-      [0, 1, 2].forEach(i => {
-        const btn = document.getElementById("btn" + i);
-        if (i === index) btn.classList.add("active");
-        else btn.classList.remove("active");
-      });
+            <!-- 成果舞台 -->
+            <div id="resultContainer" class="hidden flex flex-col items-center w-full">
+                <div class="w-full max-w-5xl relative rounded-xl overflow-hidden border-2 border-slate-700 shadow-2xl bg-slate-950">
+                    <canvas id="canvas" class="w-full h-auto block mx-auto"></canvas>
+                </div>
 
-      document.getElementById("caseTitle").innerText = data.title;
-      img.src = data.image;
+                <!-- 門檻控制 -->
+                <div class="w-full max-w-5xl mt-6 p-4 rounded-xl bg-slate-800 border border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold whitespace-nowrap">YOLO 信心門檻</span>
+                        <input type="range" id="confSlider" min="0.10" max="0.80" step="0.05" value="0.25" class="w-full sm:w-64 accent-brand-500 cursor-pointer" oninput="onThresholdChange(this.value)">
+                        <span id="confDisplay" class="text-sm font-bold text-brand-400 w-10 text-left">0.25</span>
+                    </div>
+                    <div id="inferenceTime" class="text-xs text-slate-400 font-mono">推論耗時: -- ms</div>
+                </div>
 
-      // 清除舊框
-      const oldBoxes = stage.querySelectorAll(".bbox");
-      oldBoxes.forEach(b => b.remove());
+                <!-- 決策卡片 -->
+                <div id="detectionVerdict" class="mt-4 p-6 rounded-xl border w-full max-w-5xl text-left bg-slate-800 border-slate-700 shadow-md">
+                </div>
 
-      // 產生新框
-      data.boxes.forEach(b => {
-        const box = document.createElement("div");
-        box.className = `bbox ${b.type}`;
-        box.style.top = b.top;
-        box.style.left = b.left;
-        box.style.width = b.width;
-        box.style.height = b.height;
+                <button onclick="resetDemo()" class="mt-8 text-slate-400 hover:text-white underline text-sm transition">
+                    重新選取照片檢測
+                </button>
+            </div>
 
-        const label = document.createElement("span");
-        label.className = "bbox-label";
-        label.innerText = b.label;
-        box.appendChild(label);
+        </div>
+    </section>
 
-        stage.appendChild(box);
-      });
+    <!-- JavaScript YOLOv8 前端核心 -->
+    <script>
+        let yoloSession = null;
+        let loadedImage = null;
+        let allDetections = [];
+        let confidenceThreshold = 0.25;
 
-      // 計算危險指數
-      let score = 15; // 基礎環境係數
-      if (data.hasIntersection) score += 30;
-      score += data.blindspots * 25;
-      score += data.pedestrians * 20;
+        // YOLOv8 COCO 80 類別中我們關心的交通類別
+        const COCO_CLASSES = [
+            "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat",
+            "traffic light", "fire hydrant", "stop sign", "parking meter", "bench"
+        ]; // 此處列出前段主要類別，YOLO 類別 0:person, 1:bicycle, 2:car, 3:motorcycle, 5:bus, 7:truck, 9:traffic light, 11:stop sign
 
-      const scoreEl = document.getElementById("riskScore");
-      const badgeEl = document.getElementById("riskBadge");
-      scoreEl.innerText = score;
+        const TARGET_MAP = {
+            0: { label: "行人", color: "#f43f5e", isHazard: true },
+            1: { label: "自行車", color: "#eab308", isHazard: true },
+            2: { label: "小型汽車", color: "#38bdf8", isHazard: true },
+            3: { label: "機車", color: "#f59e0b", isHazard: true },
+            5: { label: "公車", color: "#a855f7", isHazard: true },
+            7: { label: "卡車/大車", color: "#ec4899", isHazard: true },
+            9: { label: "交通號誌", color: "#10b981", isSignal: true },
+            11: { label: "停讓標誌", color: "#ef4444", isSignal: true }
+        };
 
-      // 更新危險標籤
-      if (score >= 70) {
-        badgeEl.className = "badge bg-danger fs-6 px-3 py-2 mt-1 shadow-sm";
-        badgeEl.innerText = "🚨 高風險路段 (High Risk)";
-      } else if (score >= 40) {
-        badgeEl.className = "badge bg-warning text-dark fs-6 px-3 py-2 mt-1 shadow-sm";
-        badgeEl.innerText = "⚠️ 中度風險 (Moderate Risk)";
-      } else {
-        badgeEl.className = "badge bg-success fs-6 px-3 py-2 mt-1 shadow-sm";
-        badgeEl.innerText = "✅ 低風險環境 (Safe)";
-      }
+        const imageInput = document.getElementById('imageInput');
+        const loader = document.getElementById('loader');
+        const resultContainer = document.getElementById('resultContainer');
+        const dropZone = document.getElementById('dropZone');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const verdictBox = document.getElementById('detectionVerdict');
 
-      // 更新特徵項目
-      const listEl = document.getElementById("featureList");
-      listEl.innerHTML = "";
+        // 1. 初始化載入 ONNX YOLOv8 模型
+        async function loadYOLO() {
+            try {
+                // 優先載入同目錄下的 yolov8n.onnx
+                yoloSession = await ort.InferenceSession.create('./yolov8n.onnx', {
+                    executionProviders: ['wasm']
+                });
+                document.getElementById('engineStatus').innerHTML = '<i class="fa-solid fa-check text-green-500 mr-1"></i> YOLOv8 ONNX 就緒';
+                document.getElementById('engineStatus').className = "text-xs px-3 py-1 bg-green-50 text-green-600 border border-green-200 rounded-full font-semibold";
+            } catch (e) {
+                console.warn("本機未找到 yolov8n.onnx，改嘗試公用 CDN 模型...", e);
+                try {
+                    yoloSession = await ort.InferenceSession.create('https://cdn.jsdelivr.net/gh/hyuto/yolov8-onnxruntime-web@master/public/model/yolov8n.onnx', {
+                        executionProviders: ['wasm']
+                    });
+                    document.getElementById('engineStatus').innerHTML = '<i class="fa-solid fa-check text-green-500 mr-1"></i> YOLOv8 (雲端權重) 就緒';
+                    document.getElementById('engineStatus').className = "text-xs px-3 py-1 bg-green-50 text-green-600 border border-green-200 rounded-full font-semibold";
+                } catch (err2) {
+                    document.getElementById('engineStatus').innerHTML = '<i class="fa-solid fa-xmark text-red-500 mr-1"></i> 請放 yolov8n.onnx 在專案目錄';
+                    document.getElementById('engineStatus').className = "text-xs px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded-full font-semibold";
+                }
+            }
+        }
+        loadYOLO();
 
-      const featureItems = [
-        { name: "無號誌交岔路口", detected: data.hasIntersection },
-        { name: `視距不良盲區 (${data.blindspots} 處)`, detected: data.blindspots > 0 },
-        { name: `車道行人穿越 (${data.pedestrians} 人)`, detected: data.pedestrians > 0 }
-      ];
+        // 2. 監聽圖片上傳
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
 
-      featureItems.forEach(item => {
-        const li = document.createElement("li");
-        li.className = "list-group-item d-flex justify-content-between align-items-center px-0 py-2";
-        li.innerHTML = `
-          <span class="small">${item.name}</span>
-          <span class="badge ${item.detected ? 'bg-danger' : 'bg-secondary'} rounded-pill">
-            ${item.detected ? '已檢出' : '未檢出'}
-          </span>
-        `;
-        listEl.appendChild(li);
-      });
-    }
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                processImage(evt.target.result);
+            };
+            reader.readAsDataURL(file);
+        });
 
-    // 預設載入案例 1
-    switchCase(0);
-  </script>
+        // 3. YOLO 影像前處理（將圖片轉為 640x640 Float32 NCHW Tensor）
+        function preprocess(img) {
+            const modelW = 640;
+            const modelH = 640;
+            const off = document.createElement('canvas');
+            off.width = modelW;
+            off.height = modelH;
+            const octx = off.getContext('2d');
+            octx.drawImage(img, 0, 0, modelW, modelH);
+
+            const imgData = octx.getImageData(0, 0, modelW, modelH).data;
+            const floatData = new Float32Array(3 * modelW * modelH);
+
+            // RGB 歸一化 [0, 1] 並轉為 [1, 3, 640, 640] 格式
+            for (let i = 0; i < modelW * modelH; i++) {
+                floatData[i] = imgData[i * 4] / 255.0;                      // R
+                floatData[modelW * modelH + i] = imgData[i * 4 + 1] / 255.0;  // G
+                floatData[2 * modelW * modelH + i] = imgData[i * 4 + 2] / 255.0; // B
+            }
+
+            return new ort.Tensor('float32', floatData, [1, 3, modelH, modelW]);
+        }
+
+        // 4. YOLO 後處理與 NMS 解析
+        function postprocess(output, origW, origH) {
+            // YOLOv8 輸出維度為 [1, 84, 8400]
+            const [batch, channels, numBoxes] = output.dims;
+            const data = output.data;
+            const boxes = [];
+
+            for (let i = 0; i < numBoxes; i++) {
+                // 前 4 行為中心點與長寬 cx, cy, w, h
+                const cx = data[0 * numBoxes + i];
+                const cy = data[1 * numBoxes + i];
+                const w = data[2 * numBoxes + i];
+                const h = data[3 * numBoxes + i];
+
+                // 尋找 80 類別中最高信心度的類別
+                let maxScore = -1;
+                let maxClassId = -1;
+                for (let c = 4; c < channels; c++) {
+                    const score = data[c * numBoxes + i];
+                    if (score > maxScore) {
+                        maxScore = score;
+                        maxClassId = c - 4;
+                    }
+                }
+
+                // 門檻初篩 & 只留目標類別
+                if (maxScore >= 0.10 && TARGET_MAP[maxClassId]) {
+                    // 還原至原圖比例
+                    const rx = ((cx - w / 2) / 640) * origW;
+                    const ry = ((cy - h / 2) / 640) * origH;
+                    const rw = (w / 640) * origW;
+                    const rh = (h / 640) * origH;
+
+                    boxes.push({
+                        classId: maxClassId,
+                        score: maxScore,
+                        bbox: [rx, ry, rw, rh]
+                    });
+                }
+            }
+
+            // 簡易 NMS (避免重疊框)
+            boxes.sort((a, b) => b.score - a.score);
+            const nmsResult = [];
+            for (const b of boxes) {
+                let overlap = false;
+                for (const kept of nmsResult) {
+                    if (b.classId === kept.classId && iou(b.bbox, kept.bbox) > 0.45) {
+                        overlap = true;
+                        break;
+                    }
+                }
+                if (!overlap) nmsResult.push(b);
+            }
+            return nmsResult;
+        }
+
+        function iou(b1, b2) {
+            const [x1, y1, w1, h1] = b1;
+            const [x2, y2, w2, h2] = b2;
+            const xi1 = Math.max(x1, x2);
+            const yi1 = Math.max(y1, y2);
+            const xi2 = Math.min(x1 + w1, x2 + w2);
+            const yi2 = Math.min(y1 + h1, y2 + h2);
+            const interArea = Math.max(0, xi2 - xi1) * Math.max(0, yi2 - yi1);
+            const unionArea = w1 * h1 + w2 * h2 - interArea;
+            return interArea / unionArea;
+        }
+
+        // 5. 核心推論流程
+        async function processImage(src) {
+            if (!yoloSession) {
+                alert("YOLOv8 模型尚未載入完成，請確認模型檔案是否存在！");
+                return;
+            }
+
+            dropZone.classList.add('hidden');
+            loader.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+
+            const img = new Image();
+            img.onload = async function() {
+                loadedImage = img;
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+
+                const inputTensor = preprocess(img);
+
+                const t0 = performance.now();
+                // 執行 ONNX YOLOv8 推論
+                const results = await yoloSession.run({ images: inputTensor });
+                const outputTensor = results[yoloSession.outputNames[0]];
+                const t1 = performance.now();
+                document.getElementById('inferenceTime').innerText = `YOLO 推論: ${(t1 - t0).toFixed(1)} ms`;
+
+                allDetections = postprocess(outputTensor, img.naturalWidth, img.naturalHeight);
+
+                loader.classList.add('hidden');
+                resultContainer.classList.remove('hidden');
+
+                renderCanvas();
+            };
+            img.src = src;
+        }
+
+        // 6. 渲染畫布與決策回饋
+        function renderCanvas() {
+            if (!loadedImage) return;
+
+            ctx.drawImage(loadedImage, 0, 0);
+
+            const valid = allDetections.filter(d => d.score >= confidenceThreshold);
+            const signals = valid.filter(d => TARGET_MAP[d.classId].isSignal);
+            const hazards = valid.filter(d => TARGET_MAP[d.classId].isHazard);
+
+            const fontSize = Math.max(16, Math.floor(loadedImage.naturalWidth * 0.022));
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.textBaseline = 'top';
+
+            valid.forEach(item => {
+                const config = TARGET_MAP[item.classId];
+                const [rx, ry, rw, rh] = item.bbox;
+                const score = Math.round(item.score * 100);
+                const label = `${config.label} (${score}%)`;
+
+                ctx.lineWidth = Math.max(3, Math.floor(loadedImage.naturalWidth * 0.004));
+                ctx.strokeStyle = config.color;
+                ctx.strokeRect(rx, ry, rw, rh);
+
+                const textWidth = ctx.measureText(label).width;
+                const padding = fontSize * 0.35;
+                ctx.fillStyle = config.color;
+                ctx.fillRect(rx, ry - fontSize - (padding * 2), textWidth + (padding * 2), fontSize + (padding * 2));
+
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(label, rx + padding, ry - fontSize - padding);
+            });
+
+            // 決策邏輯
+            if (signals.length > 0) {
+                verdictBox.innerHTML = `
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="px-3 py-1 bg-green-500/20 text-green-400 rounded-md font-bold text-sm">
+                            <i class="fa-solid fa-traffic-light mr-1.5"></i> YOLO 檢出號誌管制 (Level 1)
+                        </span>
+                        <span class="text-sm text-slate-400">號誌數: ${signals.length}｜車輛/用路人: ${hazards.length}</span>
+                    </div>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        YOLOv8 深度神經網路已成功捕捉到路口交通號誌，該區域受時相管制約束，請依燈號指示行駛。
+                    </p>
+                `;
+            } else if (hazards.length > 0) {
+                verdictBox.innerHTML = `
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="px-3 py-1 bg-red-500/20 text-red-400 rounded-md font-bold text-sm">
+                            <i class="fa-solid fa-triangle-exclamation mr-1.5"></i> 無號誌路口・車流衝突預警 (Level 3)
+                        </span>
+                        <span class="text-sm text-slate-400">YOLO 鎖定目標: ${hazards.length} 處</span>
+                    </div>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        未發現有效號誌管制，且 YOLOv8 於路口交會處辨識出 <strong>${hazards.length} 處載具或行人</strong>！此為高風險交岔盲區，請立即減速停讓。
+                    </p>
+                `;
+            } else {
+                verdictBox.innerHTML = `
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-md font-bold text-sm">
+                            <i class="fa-solid fa-eye-slash mr-1.5"></i> 無號誌常規路口 (Level 2)
+                        </span>
+                        <span class="text-sm text-slate-400">目前視野淨空</span>
+                    </div>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        未檢出號誌且暫無偵測到交會目標，系統判定為非號誌化靜態路段，建議維持防禦性慢行。
+                    </p>
+                `;
+            }
+        }
+
+        function onThresholdChange(val) {
+            confidenceThreshold = parseFloat(val);
+            document.getElementById('confDisplay').innerText = confidenceThreshold.toFixed(2);
+            renderCanvas();
+        }
+
+        function resetDemo() {
+            resultContainer.classList.add('hidden');
+            dropZone.classList.remove('hidden');
+            imageInput.value = '';
+            loadedImage = null;
+            document.getElementById('demo').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
 </body>
 </html>
