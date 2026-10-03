@@ -218,14 +218,14 @@
         let confidenceThreshold = 0.25;
 
         const TARGET_MAP = {
-            0: { label: "行人", color: "#f43f5e", isHazard: true },
-            1: { label: "自行車", color: "#eab308", isHazard: true },
-            2: { label: "小型車輛", color: "#38bdf8", isHazard: true },
-            3: { label: "機車", color: "#f59e0b", isHazard: true },
-            5: { label: "公車", color: "#a855f7", isHazard: true },
-            7: { label: "大型貨車", color: "#ec4899", isHazard: true },
-            9: { label: "交通號誌", color: "#10b981", isSignal: true },
-            11: { label: "停讓標誌", color: "#ef4444", isSignal: true }
+        0: { label: "行人", color: "#f43f5e", isHazard: true },
+    1: { label: "自行車", color: "#eab308", isHazard: true },
+    2: { label: "機動車輛", color: "#38bdf8", isHazard: true }, // car
+    3: { label: "機車", color: "#f59e0b", isHazard: true },     // motorcycle
+    5: { label: "機動車輛", color: "#38bdf8", isHazard: true }, // bus (合併為機動車輛)
+    7: { label: "機動車輛", color: "#38bdf8", isHazard: true }, // truck (合併為機動車輛)
+    9: { label: "交通號誌", color: "#10b981", isSignal: true },
+    11: { label: "停讓標誌", color: "#ef4444", isSignal: true }
         };
 
         const imageInput = document.getElementById('imageInput');
