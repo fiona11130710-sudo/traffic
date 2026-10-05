@@ -8,19 +8,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#2563eb',
-                        danger: '#ef4444',
-                        success: '#10b981',
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- 輕量高相容真實 AI 引擎：TensorFlow.js + COCO-SSD (學校電腦、手機 100% 可載入) -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans">
 
@@ -33,8 +23,8 @@
                 <span class="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">開源公益方案</span>
             </div>
             <div class="flex items-center gap-3 text-sm font-medium">
-                <span id="engineStatus" class="text-xs px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full font-medium">
-                    <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1 animate-pulse"></span> 🟢 SafeRoad 邊緣感知引擎就緒
+                <span id="engineStatus" class="text-xs px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full font-medium">
+                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> 邊緣 AI 模組初始化中...
                 </span>
                 <a href="#demo" class="hidden sm:inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">一鍵體驗</a>
             </div>
@@ -51,7 +41,7 @@
             <span class="text-blue-600">升級為 AI 交通安全網</span>
         </h1>
         <p class="text-base sm:text-lg text-slate-600 max-w-3xl mx-auto mb-8 leading-relaxed">
-            零硬體採購門檻！SafeRoad AI 是一個致力於減少交通事故的公益專案。透過先進影像辨識技術，自動偵測未禮讓行人等危險衝突，協助社區與偏鄉打造安全的交通環境。
+            零硬體採購門檻！SafeRoad AI 是一個致力於減少交通事故的公益專案。透過邊緣影像辨識技術，自動偵測未禮讓行人等危險衝突，協助社區與偏鄉打造安全交通環境。
         </p>
         <div class="flex justify-center gap-4">
             <a href="#demo" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-md hover:bg-blue-700 transition">
@@ -63,7 +53,7 @@
         </div>
     </header>
 
-    <!-- 方案比較表 -->
+    <!-- 比較表格 -->
     <section id="matrix" class="py-12 bg-white border-y border-slate-200">
         <div class="max-w-5xl mx-auto px-4">
             <h2 class="text-2xl font-bold text-center text-slate-900 mb-8">為什麼社群需要 SafeRoad AI？</h2>
@@ -98,23 +88,23 @@
         </div>
     </section>
 
-    <!-- 核心體驗區 (Demo) -->
+    <!-- 核心體驗區 -->
     <section id="demo" class="py-16 px-4 max-w-5xl mx-auto">
         <div class="text-center mb-6">
             <h2 class="text-3xl font-extrabold text-slate-900 mb-2">一鍵體驗：交通影像 AI 分析</h2>
             <p class="text-slate-600 text-sm">
-                上傳路口街景照片，進行即時目標辨識與未禮讓行人衝突檢測。
+                上傳路口街景照片，進行真實物件偵測與未禮讓行人衝突檢測。
             </p>
         </div>
 
-        <!-- 引擎模式選擇器（老師要求的 Roboflow 整合配置） -->
+        <!-- 引擎模式選擇器 -->
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider"><i class="fa-solid fa-sliders text-blue-600 mr-1"></i> 推論模式：</span>
+                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider"><i class="fa-solid fa-sliders text-blue-600 mr-1"></i> 推論架構：</span>
                     <label class="inline-flex items-center text-xs font-medium cursor-pointer">
                         <input type="radio" name="inferMode" value="local" checked onchange="switchMode('local')" class="text-blue-600">
-                        <span class="ml-1 text-slate-800">端點輕量推論 (即時秒級)</span>
+                        <span class="ml-1 text-slate-800">邊緣端點模型 (即時秒級)</span>
                     </label>
                     <label class="inline-flex items-center text-xs font-medium cursor-pointer ml-3">
                         <input type="radio" name="inferMode" value="roboflow" onchange="switchMode('roboflow')" class="text-blue-600">
@@ -122,14 +112,14 @@
                     </label>
                 </div>
                 <div class="text-xs text-slate-500 font-mono" id="modeDescription">
-                    模式：純前端邊緣運算・零延遲免主機
+                    模式：純前端瀏覽器真實張量推論・保證 100% 隱私
                 </div>
             </div>
 
             <!-- Roboflow 專用設定區塊 -->
             <div id="roboflowConfig" class="hidden mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Roboflow Model ID (含版本號，如 traffic-safety/1)</label>
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Roboflow Model ID (如 saferoad-tw/1)</label>
                     <input type="text" id="rfModelId" placeholder="例如：saferoad-tw/1" class="w-full text-xs p-2 rounded border border-slate-300 focus:border-blue-500 focus:outline-none">
                 </div>
                 <div>
@@ -144,13 +134,13 @@
             <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
             <i class="fa-solid fa-cloud-arrow-up text-5xl text-blue-500 mb-3"></i>
             <h3 class="text-lg font-bold text-slate-800">點擊或拖曳圖片至此上傳</h3>
-            <p class="text-xs text-slate-500 mt-1">支援 JPG, PNG 格式路口街景照片</p>
+            <p class="text-xs text-slate-500 mt-1">支援任何路口實拍照片進行真實 AI 運算</p>
         </div>
 
         <!-- 辨識中 -->
         <div id="loader" class="hidden text-center py-12">
             <i class="fa-solid fa-spinner fa-spin text-4xl text-blue-600 mb-3"></i>
-            <p class="text-slate-700 font-medium" id="loaderText">AI 模型分析中，請稍候...</p>
+            <p class="text-slate-700 font-medium" id="loaderText">神經網路特徵提取中，請稍候...</p>
         </div>
 
         <!-- 結果展示 -->
@@ -160,7 +150,6 @@
                     <canvas id="canvas" class="w-full h-auto block"></canvas>
                 </div>
 
-                <!-- 狀態說明條 (完全對照老師文案：紅標違規風險、綠標一般對象) -->
                 <div class="mt-4 flex flex-wrap items-center justify-between gap-4 p-3 bg-slate-50 rounded-lg text-xs">
                     <div class="flex items-center gap-4">
                         <span class="inline-flex items-center gap-1 font-semibold text-red-600">
@@ -170,7 +159,7 @@
                             <span class="w-3 h-3 bg-emerald-500 rounded-sm"></span> 一般行人/車輛
                         </span>
                     </div>
-                    <div id="inferenceTime" class="text-slate-500 font-mono">推論耗時: 68 ms (Edge WASM)</div>
+                    <div id="inferenceTime" class="text-slate-500 font-mono">推論耗時: -- ms</div>
                 </div>
 
                 <!-- 決策卡片 -->
@@ -187,14 +176,13 @@
         </div>
     </section>
 
-    <!-- 頁尾 -->
     <footer class="bg-white border-t border-slate-200 py-8 text-center text-xs text-slate-500">
         <p class="font-bold text-slate-700 mb-1">SafeRoad AI 公益計畫 - 源自社群，守護生命</p>
         <p>這是一個開源展示頁面，旨在推廣利用平民化 AI 科技改善交通環境。</p>
     </footer>
 
-    <!-- JavaScript 穩定無卡死引擎 -->
     <script>
+        let aiModel = null;
         let currentMode = 'local';
         let loadedImage = null;
 
@@ -205,6 +193,20 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const verdictBox = document.getElementById('verdictBox');
+        const statusEl = document.getElementById('engineStatus');
+
+        // 1. 載入真實輕量邊緣模型 (Google 官方優化，保證全平台秒載入)
+        async function loadModel() {
+            try {
+                aiModel = await cocoSsd.load({ base: 'mobilenet_v2' });
+                statusEl.className = "text-xs px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full font-medium";
+                statusEl.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1 animate-pulse"></span> 🟢 邊緣 AI 模型就緒 (真推論)';
+            } catch (err) {
+                console.error(err);
+                statusEl.innerText = "模型載入異常，請重新整理";
+            }
+        }
+        loadModel();
 
         function switchMode(mode) {
             currentMode = mode;
@@ -215,7 +217,7 @@
                 desc.innerText = "模式：調用 Roboflow 訓練模型 API 進行推論";
             } else {
                 configBox.classList.add('hidden');
-                desc.innerText = "模式：純前端邊緣運算・零延遲免主機";
+                desc.innerText = "模式：純前端瀏覽器真實張量推論・保證 100% 隱私";
             }
         }
 
@@ -229,68 +231,113 @@
             reader.readAsDataURL(file);
         });
 
-        function processImage(src) {
+        // 2. 真實執行影像推論
+        async function processImage(src) {
+            if (!aiModel && currentMode === 'local') {
+                alert("AI 模型正在初始化，請稍候 3 秒後再試！");
+                return;
+            }
+
             dropZone.classList.add('hidden');
             loader.classList.remove('hidden');
             resultContainer.classList.add('hidden');
 
             const img = new Image();
-            img.onload = function() {
+            img.onload = async function() {
                 loadedImage = img;
                 canvas.width = img.naturalWidth;
                 canvas.height = img.naturalHeight;
 
-                // 模擬神經網路計算 600ms
-                setTimeout(() => {
-                    const detections = analyzeScene(img);
-                    renderResults(detections);
-                    loader.classList.add('hidden');
-                    resultContainer.classList.remove('hidden');
-                }, 600);
+                const t0 = performance.now();
+                let detections = [];
+
+                if (currentMode === 'roboflow') {
+                    // Roboflow API 模式
+                    detections = await inferRoboflow(src);
+                } else {
+                    // 本地真實模型推論 (準確抓取每張照片上的物體坐標)
+                    const rawResults = await aiModel.detect(img);
+                    
+                    // 翻譯與過濾交通目標，門檻 0.30 排除雜訊
+                    rawResults.forEach(item => {
+                        if (item.score >= 0.30) {
+                            let mappedType = null;
+                            let label = "";
+
+                            if (item.class === 'person') {
+                                mappedType = 'person';
+                                label = '行人';
+                            } else if (['car', 'bus', 'truck'].includes(item.class)) {
+                                mappedType = 'vehicle';
+                                label = '通行車輛';
+                            } else if (item.class === 'motorcycle') {
+                                mappedType = 'vehicle';
+                                label = '機車';
+                            } else if (item.class === 'bicycle') {
+                                mappedType = 'vehicle';
+                                label = '自行車';
+                            }
+
+                            if (mappedType) {
+                                detections.push({
+                                    type: mappedType,
+                                    label: label,
+                                    score: item.score,
+                                    bbox: item.bbox // [x, y, width, height]
+                                });
+                            }
+                        }
+                    });
+                }
+
+                const t1 = performance.now();
+                document.getElementById('inferenceTime').innerText = `推論耗時: ${(t1 - t0).toFixed(0)} ms (真實神經網路)`;
+
+                renderResults(detections);
+                loader.classList.add('hidden');
+                resultContainer.classList.remove('hidden');
             };
             img.src = src;
         }
 
-        // 智慧邊緣場景感知演算法 (兼具真實性與絕對穩定)
-        function analyzeScene(img) {
-            const w = img.naturalWidth;
-            const h = img.naturalHeight;
+        async function inferRoboflow(base64Data) {
+            const modelId = document.getElementById('rfModelId').value.trim();
+            const apiKey = document.getElementById('rfApiKey').value.trim();
+
+            if (!modelId || !apiKey) {
+                alert("請填入 Roboflow Model ID 與 API Key！若尚未取得，請切回『邊緣端點模型』模式。");
+                throw new Error("Missing Roboflow credentials");
+            }
+
+            const cleanBase64 = base64Data.split(',')[1] || base64Data;
+            const res = await fetch(`https://detect.roboflow.com/${modelId}?api_key=${apiKey}&confidence=30`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: cleanBase64
+            });
+
+            const json = await res.json();
             const boxes = [];
-
-            // 針對街景畫面比例進行智能目標提取
-            // 1. 車輛目標 (右側或路面載具)
-            boxes.push({
-                type: 'vehicle',
-                label: '通行車輛',
-                score: 0.94,
-                bbox: [w * 0.58, h * 0.48, w * 0.38, h * 0.45]
+            (json.predictions || []).forEach(p => {
+                const cls = (p.class || '').toLowerCase();
+                const isPerson = cls.includes('person') || cls.includes('pedestrian');
+                boxes.push({
+                    type: isPerson ? 'person' : 'vehicle',
+                    label: p.class,
+                    score: p.confidence,
+                    bbox: [p.x - p.width / 2, p.y - p.height / 2, p.width, p.height]
+                });
             });
-
-            // 2. 機車目標 (若為橫向路口)
-            boxes.push({
-                type: 'vehicle',
-                label: '機車',
-                score: 0.88,
-                bbox: [w * 0.52, h * 0.50, w * 0.12, h * 0.22]
-            });
-
-            // 3. 行人目標 (中央穿越道/斑馬線)
-            boxes.push({
-                type: 'person',
-                label: '行人',
-                score: 0.91,
-                bbox: [w * 0.41, h * 0.44, w * 0.07, h * 0.16]
-            });
-
             return boxes;
         }
 
+        // 3. 繪製標註與未禮讓行人告警
         function renderResults(boxes) {
             ctx.drawImage(loadedImage, 0, 0);
 
             const hasPerson = boxes.some(b => b.type === 'person');
             const hasVehicle = boxes.some(b => b.type === 'vehicle');
-            const hasConflict = hasPerson && hasVehicle; // 人車同框 = 觸發未禮讓行人風險
+            const hasConflict = hasPerson && hasVehicle; // 人車同框 = 觸發未禮讓行人告警
 
             const fontSize = Math.max(16, Math.floor(loadedImage.naturalWidth * 0.022));
             ctx.font = `bold ${fontSize}px sans-serif`;
@@ -325,19 +372,25 @@
                         <span>高風險告警：偵測到路口人車交會（未禮讓行人風險）</span>
                     </div>
                     <p class="text-xs text-red-700">
-                        AI 於畫面中同時鎖定行人與通行車輛。系統啟動行人防護預警，提醒車輛務必於斑馬線與路口前完全煞停禮讓！
+                        神經網路精準鎖定路口行人與通行車輛。系統啟動行人防護預警，提醒車輛務必於斑馬線前完全煞停禮讓！
                     </p>
                 `;
-            } else {
+            } else if (hasPerson || hasVehicle) {
                 verdictBox.className = "mt-4 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800";
                 verdictBox.innerHTML = `
                     <div class="flex items-center gap-2 font-bold text-base mb-1">
                         <i class="fa-solid fa-circle-check text-emerald-600"></i>
-                        <span>常態通行：路況安全無立即衝突</span>
+                        <span>常態通行：路況安全無立即人車衝突</span>
                     </div>
                     <p class="text-xs text-emerald-700">
-                        未偵測到人車交會之碰撞風險，用路人維持正常行駛。
+                        畫面未發現人車交會衝突，用路人維持正常行駛。
                     </p>
+                `;
+            } else {
+                verdictBox.className = "mt-4 p-4 rounded-lg bg-slate-100 border border-slate-200 text-slate-700";
+                verdictBox.innerHTML = `
+                    <div class="font-bold text-sm mb-1">未檢驗出活動目標</div>
+                    <p class="text-xs text-slate-500">當前畫面中未辨識到行人或機動車輛。</p>
                 `;
             }
         }
