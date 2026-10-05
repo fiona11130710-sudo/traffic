@@ -1,232 +1,209 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="dark">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SafeRoad Vision | 次世代路口安全感知與決策平台</title>
-    <!-- Tailwind CSS CDN -->
+    <title>SafeRoad AI | 將既有監視器升級為 AI 交通安全網</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- ONNX Runtime Web 引擎 -->
+    <!-- ONNX Runtime Web 引擎 (前端運行 YOLOv8) -->
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.16.3/dist/ort.min.js"></script>
 
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        ops: {
-                            base: '#030712',
-                            panel: '#0f172a',
-                            card: '#1e293b',
-                            border: '#334155',
-                            accent: '#6366f1',
-                            accentHover: '#4f46e5'
-                        },
-                        status: {
-                            safe: '#10b981',
-                            caution: '#f59e0b',
-                            danger: '#ef4444'
-                        }
+                        primary: '#2563eb',
+                        danger: '#ef4444',
+                        success: '#10b981',
                     }
                 }
             }
         }
     </script>
-    <style>
-        body {
-            background-color: #030712;
-            background-image: radial-gradient(rgba(99, 102, 241, 0.08) 1px, transparent 1px);
-            background-size: 24px 24px;
-        }
-        .hud-border {
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(12px);
-        }
-    </style>
 </head>
-<body class="text-slate-100 font-sans min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+<body class="bg-slate-50 text-slate-800 font-sans">
 
-    <!-- 頂部控制台導覽列 -->
-    <header class="border-b border-slate-800 bg-slate-950/80 sticky top-0 z-50 backdrop-blur-md">
+    <!-- 導覽列 -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="h-9 w-9 rounded-lg bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
-                    <i class="fa-solid fa-radar text-lg"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span class="font-extrabold text-lg tracking-wider uppercase text-white">SafeRoad<span class="text-indigo-400">Vision</span></span>
-                        <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-indigo-950 border border-indigo-800 text-indigo-300 font-bold">Edge v8</span>
-                    </div>
-                    <p class="text-[11px] text-slate-400 leading-none">路口動態衝突感知與路權決策系統</p>
-                </div>
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-shield-heart text-blue-600 text-2xl"></i>
+                <span class="font-extrabold text-xl tracking-tight text-slate-900">SafeRoad <span class="text-blue-600">AI</span></span>
+                <span class="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">開源公益方案</span>
             </div>
+            <div class="flex items-center gap-3 text-sm font-medium">
+                <span id="engineStatus" class="text-xs px-3 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-full font-medium">
+                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> YOLOv8 引擎載入中...
+                </span>
+                <a href="#demo" class="hidden sm:inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">一鍵體驗</a>
+            </div>
+        </div>
+    </nav>
 
-            <div class="flex items-center gap-4">
-                <div id="engineStatus" class="flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-400">
-                    <span class="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
-                    <span>初始化神經網路...</span>
-                </div>
-                <a href="#consoleSection" class="hidden sm:inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-lg shadow-indigo-600/20">
-                    <i class="fa-solid fa-crosshairs"></i> 操作終端
-                </a>
-            </div>
+    <!-- 橫幅區 (老師指定文案) -->
+    <header class="py-16 px-4 max-w-5xl mx-auto text-center">
+        <div class="inline-block px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-semibold mb-4 border border-blue-200">
+            100% 開源公益，守護用路人
+        </div>
+        <h1 class="text-4xl sm:text-5xl font-black text-slate-900 mb-6 leading-tight">
+            將既有監視器 <br>
+            <span class="text-blue-600">升級為 AI 交通安全網</span>
+        </h1>
+        <p class="text-base sm:text-lg text-slate-600 max-w-3xl mx-auto mb-8 leading-relaxed">
+            零硬體採購門檻！SafeRoad AI 是一個致力於減少交通事故的公益專案。透過先進影像辨識技術，自動偵測未禮讓行人等危險衝突，協助社區與偏鄉打造安全的交通環境。
+        </p>
+        <div class="flex justify-center gap-4">
+            <a href="#demo" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-md hover:bg-blue-700 transition">
+                <i class="fa-solid fa-camera mr-1"></i> 立即測試照片
+            </a>
+            <a href="#matrix" class="bg-white border border-slate-300 text-slate-700 px-6 py-3 rounded-lg font-bold hover:bg-slate-50 transition">
+                為什麼需要 SafeRoad AI？
+            </a>
         </div>
     </header>
 
-    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <!-- 方案比較表 -->
+    <section id="matrix" class="py-12 bg-white border-y border-slate-200">
+        <div class="max-w-5xl mx-auto px-4">
+            <h2 class="text-2xl font-bold text-center text-slate-900 mb-8">為什麼社群需要 SafeRoad AI？</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 border-b border-slate-200 text-slate-700">
+                            <th class="p-3 font-semibold">比較面向</th>
+                            <th class="p-3 font-semibold">傳統科技執法 / 人工站崗</th>
+                            <th class="p-3 font-semibold text-blue-600">SafeRoad AI (開源公益方案)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 text-slate-600">
+                        <tr>
+                            <td class="p-3 font-medium text-slate-900">建置成本與硬體</td>
+                            <td class="p-3">需採購數百萬專屬攝影機與主機，建置期長。</td>
+                            <td class="p-3 text-blue-700 font-medium">無硬體綁約，可直接串接路口既有 RTSP 監視器。</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-medium text-slate-900">人力需求</td>
+                            <td class="p-3">高度依賴員警路口站崗，或人工回看監視器。</td>
+                            <td class="p-3 text-blue-700 font-medium">AI 24 小時自動化監控，減輕警力與導護負擔。</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-medium text-slate-900">即時性與告警</td>
+                            <td class="p-3">事故發生後才調閱畫面釐清肇責。</td>
+                            <td class="p-3 text-blue-700 font-medium">秒級辨識，可連動警示看板或廣播提醒。</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 
-        <!-- 系統狀態快速指標 (KPI Bar) -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-slate-900/60 rounded-xl p-4 hud-border">
-                <div class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <i class="fa-solid fa-microchip text-indigo-400"></i> 推論架構
+    <!-- 核心體驗區 (Demo) -->
+    <section id="demo" class="py-16 px-4 max-w-5xl mx-auto">
+        <div class="text-center mb-6">
+            <h2 class="text-3xl font-extrabold text-slate-900 mb-2">一鍵體驗：交通影像 AI 分析</h2>
+            <p class="text-slate-600 text-sm">
+                上傳路口街景照片，進行即時目標辨識與未禮讓行人衝突檢測。
+            </p>
+        </div>
+
+        <!-- 引擎模式選擇器（老師要求的 Roboflow 整合配置） -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider"><i class="fa-solid fa-sliders text-blue-600 mr-1"></i> 推論模式：</span>
+                    <label class="inline-flex items-center text-xs font-medium cursor-pointer">
+                        <input type="radio" name="inferMode" value="local_yolo" checked onchange="switchMode('local_yolo')" class="text-blue-600">
+                        <span class="ml-1 text-slate-800">YOLOv8 端點推論 (免設定)</span>
+                    </label>
+                    <label class="inline-flex items-center text-xs font-medium cursor-pointer ml-3">
+                        <input type="radio" name="inferMode" value="roboflow" onchange="switchMode('roboflow')" class="text-blue-600">
+                        <span class="ml-1 text-slate-800">Roboflow 模型整合模式</span>
+                    </label>
                 </div>
-                <div class="text-lg font-bold font-mono text-white">YOLOv8n ONNX</div>
-                <div class="text-[11px] text-slate-500 mt-0.5">WASM 端點硬體加速</div>
+                <div class="text-xs text-slate-500 font-mono" id="modeDescription">
+                    模式：瀏覽器端純前端 WebAssembly 推論
+                </div>
             </div>
-            <div class="bg-slate-900/60 rounded-xl p-4 hud-border">
-                <div class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <i class="fa-solid fa-bolt text-emerald-400"></i> 端點推論延遲
+
+            <!-- Roboflow 專用設定區塊 (切換後展開) -->
+            <div id="roboflowConfig" class="hidden mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Roboflow Model ID (含版本號，如 traffic-safety/1)</label>
+                    <input type="text" id="rfModelId" placeholder="例如：my-project/1" class="w-full text-xs p-2 rounded border border-slate-300 focus:border-blue-500 focus:outline-none">
                 </div>
-                <div id="statLatency" class="text-lg font-bold font-mono text-emerald-400">-- ms</div>
-                <div class="text-[11px] text-slate-500 mt-0.5">本地運行・免伺服器</div>
-            </div>
-            <div class="bg-slate-900/60 rounded-xl p-4 hud-border">
-                <div class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <i class="fa-solid fa-cube text-sky-400"></i> 目標捕捉總數
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Roboflow API Key (Publishable / Secret Key)</label>
+                    <input type="password" id="rfApiKey" placeholder="貼上你的 Roboflow API Key" class="w-full text-xs p-2 rounded border border-slate-300 focus:border-blue-500 focus:outline-none">
                 </div>
-                <div id="statObjects" class="text-lg font-bold font-mono text-white">0 件</div>
-                <div class="text-[11px] text-slate-500 mt-0.5">號誌、機車、汽車、行人</div>
-            </div>
-            <div class="bg-slate-900/60 rounded-xl p-4 hud-border">
-                <div class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <i class="fa-solid fa-shield-virus text-amber-400"></i> 當前路口安全級別
-                </div>
-                <div id="statRisk" class="text-lg font-bold font-mono text-slate-300">待檢驗</div>
-                <div class="text-[11px] text-slate-500 mt-0.5">動態三級風險評估</div>
             </div>
         </div>
 
-        <!-- 核心操作工作台 -->
-        <section id="consoleSection" class="bg-slate-900/40 rounded-2xl hud-border p-6 lg:p-8">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-slate-800 pb-5">
-                <div>
-                    <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                        <span>視覺檢測與場景推論主控台</span>
-                    </h2>
-                    <p class="text-xs text-slate-400 mt-1">上傳街景照片或即時行車視角，檢驗號誌空間特徵並感知交會衝突目標。</p>
+        <!-- 上傳框 -->
+        <div id="dropZone" class="bg-white border-2 border-dashed border-slate-300 rounded-xl p-12 text-center hover:border-blue-500 transition cursor-pointer relative shadow-sm">
+            <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+            <i class="fa-solid fa-cloud-arrow-up text-5xl text-blue-500 mb-3"></i>
+            <h3 class="text-lg font-bold text-slate-800">點擊或拖曳圖片至此上傳</h3>
+            <p class="text-xs text-slate-500 mt-1">支援 JPG, PNG 格式路口街景照片</p>
+        </div>
+
+        <!-- 辨識中 -->
+        <div id="loader" class="hidden text-center py-12">
+            <i class="fa-solid fa-spinner fa-spin text-4xl text-blue-600 mb-3"></i>
+            <p class="text-slate-700 font-medium" id="loaderText">AI 模型分析中，請稍候...</p>
+        </div>
+
+        <!-- 結果展示 -->
+        <div id="resultContainer" class="hidden mt-8">
+            <div class="bg-white p-4 rounded-xl shadow-lg border border-slate-200">
+                <div class="overflow-hidden rounded-lg bg-black flex justify-center">
+                    <canvas id="canvas" class="w-full h-auto block"></canvas>
                 </div>
 
-                <!-- 門檻微調控制區 -->
-                <div class="flex items-center gap-4 bg-slate-950/80 px-4 py-2.5 rounded-xl border border-slate-800">
-                    <span class="text-xs text-slate-400 font-mono uppercase tracking-wider">信心門檻</span>
-                    <input type="range" id="confSlider" min="0.10" max="0.75" step="0.05" value="0.25" class="w-28 sm:w-36 accent-indigo-500 cursor-pointer" oninput="onThresholdChange(this.value)">
-                    <span id="confDisplay" class="text-xs font-mono font-bold text-indigo-400 w-8 text-right">0.25</span>
-                </div>
-            </div>
-
-            <!-- 上傳拖曳區 -->
-            <div id="dropZone" class="w-full border-2 border-slate-800 border-dashed rounded-xl p-12 text-center hover:border-indigo-500/60 bg-slate-950/40 transition group cursor-pointer relative">
-                <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                <div class="flex flex-col items-center pointer-events-none">
-                    <div class="w-16 h-16 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-2xl mb-4 group-hover:scale-105 transition">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                <!-- 狀態說明條 (完全對照老師文案：紅標違規風險、綠標一般對象) -->
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-4 p-3 bg-slate-50 rounded-lg text-xs">
+                    <div class="flex items-center gap-4">
+                        <span class="inline-flex items-center gap-1 font-semibold text-red-600">
+                            <span class="w-3 h-3 bg-red-500 rounded-sm"></span> 違規/高風險對象 (未禮讓)
+                        </span>
+                        <span class="inline-flex items-center gap-1 font-semibold text-emerald-600">
+                            <span class="w-3 h-3 bg-emerald-500 rounded-sm"></span> 一般行人/車輛
+                        </span>
                     </div>
-                    <div class="text-base font-semibold text-slate-200 mb-1">載入路口照片進行感知推論</div>
-                    <p class="text-xs text-slate-500">支援拖曳或點選上傳 JPG、PNG 高解析度影像</p>
-                </div>
-            </div>
-
-            <!-- 推論運算進度條 -->
-            <div id="loader" class="hidden py-16 text-center">
-                <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-950 border border-indigo-800 text-indigo-400 mb-4 animate-spin">
-                    <i class="fa-solid fa-circle-notch text-xl"></i>
-                </div>
-                <div class="text-sm font-semibold text-slate-300 tracking-wide">YOLOv8 深度特徵金字塔運算中...</div>
-                <p class="text-xs text-slate-500 mt-1">執行 640×640 歸一化張量比對與 NMS 邊界篩選</p>
-            </div>
-
-            <!-- 成果展示工作台 (主視覺與決策模組) -->
-            <div id="resultContainer" class="hidden space-y-6">
-                
-                <!-- 大尺寸畫布外框 -->
-                <div class="relative w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl flex items-center justify-center">
-                    <canvas id="canvas" class="w-full h-auto block mx-auto"></canvas>
+                    <div id="inferenceTime" class="text-slate-500 font-mono">推論耗時: -- ms</div>
                 </div>
 
-                <!-- 決策卡片與統計面版 -->
-                <div id="decisionCard" class="rounded-xl border p-6 transition-all duration-300">
-                    <!-- 由 JavaScript 動態繪製內容 -->
+                <!-- 決策卡片 -->
+                <div id="verdictBox" class="mt-4 p-4 rounded-lg">
+                    <!-- 動態填入 -->
                 </div>
 
-                <div class="flex justify-between items-center pt-2">
-                    <button onclick="resetConsole()" class="text-xs text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5 underline">
-                        <i class="fa-solid fa-rotate-left"></i> 重置並重新載入照片
+                <div class="text-center mt-6">
+                    <button onclick="resetDemo()" class="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-semibold transition">
+                        重新測試一張
                     </button>
-                    <span class="text-[11px] font-mono text-slate-500">SafeRoad Risk Assessment Engine</span>
                 </div>
             </div>
-        </section>
-
-        <!-- 決策依據說明 (簡報對照組) -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="p-5 rounded-xl bg-slate-900/40 border border-slate-800/80">
-                <div class="text-xs font-mono font-semibold text-emerald-400 mb-1 flex items-center gap-1.5">
-                    <i class="fa-solid fa-circle-check"></i> Level 1: 管制狀態
-                </div>
-                <h4 class="text-sm font-bold text-white mb-2">號誌化交岔路口</h4>
-                <p class="text-xs text-slate-400 leading-relaxed">
-                    YOLO 成功提取號誌實體特徵。代表路口具備既定時相管制，用路人遵循燈號依序通行，碰撞風險處於可控常規。
-                </p>
-            </div>
-            <div class="p-5 rounded-xl bg-slate-900/40 border border-slate-800/80">
-                <div class="text-xs font-mono font-semibold text-amber-400 mb-1 flex items-center gap-1.5">
-                    <i class="fa-solid fa-triangle-exclamation"></i> Level 2: 視野淨空
-                </div>
-                <h4 class="text-sm font-bold text-white mb-2">非號誌化靜態路口</h4>
-                <p class="text-xs text-slate-400 leading-relaxed">
-                    無有效號誌且未發現交會車輛。系統啟動被動防護機制，提醒行經巷弄交會點仍應主動確認支線讓幹道。
-                </p>
-            </div>
-            <div class="p-5 rounded-xl bg-slate-900/40 border border-slate-800/80">
-                <div class="text-xs font-mono font-semibold text-rose-400 mb-1 flex items-center gap-1.5">
-                    <i class="fa-solid fa-radiation"></i> Level 3: 衝突預警
-                </div>
-                <h4 class="text-sm font-bold text-white mb-2">無號誌高衝突環境</h4>
-                <p class="text-xs text-slate-400 leading-relaxed">
-                    無號誌但視野內同時出現汽機車或行人。高機率發生路權搶越或盲區死角碰撞，即時觸發高風險防撞預警。
-                </p>
-            </div>
-        </section>
-
-    </main>
+        </div>
+    </section>
 
     <!-- 頁尾 -->
-    <footer class="border-t border-slate-900 py-6 text-center text-xs text-slate-600 font-mono">
-        SafeRoad Vision・Edge AI Traffic Operations Console・All Client-Side Inference
+    <footer class="bg-white border-t border-slate-200 py-8 text-center text-xs text-slate-500">
+        <p class="font-bold text-slate-700 mb-1">SafeRoad AI 公益計畫 - 源自社群，守護生命</p>
+        <p>這是一個開源展示頁面，旨在推廣利用平民化 AI 科技改善交通環境。</p>
     </footer>
 
-    <!-- JavaScript 核心引擎 -->
+    <!-- JavaScript 整合邏輯 -->
     <script>
+        let currentMode = 'local_yolo'; // 'local_yolo' 或 'roboflow'
         let yoloSession = null;
         let loadedImage = null;
-        let allDetections = [];
-        let confidenceThreshold = 0.25;
+        let originalBase64 = null;
 
-        const TARGET_MAP = {
-        0: { label: "行人", color: "#f43f5e", isHazard: true },
-    1: { label: "自行車", color: "#eab308", isHazard: true },
-    2: { label: "機動車輛", color: "#38bdf8", isHazard: true }, // car
-    3: { label: "機車", color: "#f59e0b", isHazard: true },     // motorcycle
-    5: { label: "機動車輛", color: "#38bdf8", isHazard: true }, // bus (合併為機動車輛)
-    7: { label: "機動車輛", color: "#38bdf8", isHazard: true }, // truck (合併為機動車輛)
-    9: { label: "交通號誌", color: "#10b981", isSignal: true },
-    11: { label: "停讓標誌", color: "#ef4444", isSignal: true }
-        };
+        const VEHICLE_IDS = [2, 3, 5, 7];
+        const PERSON_ID = 0;
 
         const imageInput = document.getElementById('imageInput');
         const loader = document.getElementById('loader');
@@ -234,76 +211,75 @@
         const dropZone = document.getElementById('dropZone');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const decisionCard = document.getElementById('decisionCard');
+        const verdictBox = document.getElementById('verdictBox');
+        const statusEl = document.getElementById('engineStatus');
 
-        // 1. 初始化載入 ONNX YOLOv8
-        async function loadYOLO() {
+        // 1. 初始化 YOLOv8 本機/雲端備援模型
+        async function initYOLO() {
             try {
-                yoloSession = await ort.InferenceSession.create('./yolov8n.onnx', {
-                    executionProviders: ['wasm']
-                });
-                updateStatus(true, "YOLOv8 本地權重就緒");
+                yoloSession = await ort.InferenceSession.create('./yolov8n.onnx', { executionProviders: ['wasm'] });
+                setStatus("🟢 YOLOv8 本地端點就緒");
             } catch (e) {
-                console.warn("本機未找到 yolov8n.onnx，改從備援 CDN 載入...", e);
                 try {
-                    yoloSession = await ort.InferenceSession.create('https://cdn.jsdelivr.net/gh/hyuto/yolov8-onnxruntime-web@master/public/model/yolov8n.onnx', {
-                        executionProviders: ['wasm']
-                    });
-                    updateStatus(true, "YOLOv8 雲端備援權重就緒");
+                    yoloSession = await ort.InferenceSession.create('https://cdn.jsdelivr.net/gh/hyuto/yolov8-onnxruntime-web@master/public/model/yolov8n.onnx', { executionProviders: ['wasm'] });
+                    setStatus("🟢 YOLOv8 雲端備援就緒");
                 } catch (err2) {
-                    updateStatus(false, "YOLO 權重載入失敗");
+                    setStatus("🔴 模型載入失敗");
                 }
             }
         }
-        loadYOLO();
+        initYOLO();
 
-        function updateStatus(success, text) {
-            const el = document.getElementById('engineStatus');
-            if (success) {
-                el.className = "flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-full bg-emerald-950/60 border border-emerald-800 text-emerald-400";
-                el.innerHTML = `<span class="h-2 w-2 rounded-full bg-emerald-400"></span><span>${text}</span>`;
+        function setStatus(text) {
+            statusEl.innerText = text;
+            statusEl.className = "text-xs px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full font-medium";
+        }
+
+        // 2. 切換模式
+        function switchMode(mode) {
+            currentMode = mode;
+            const configBox = document.getElementById('roboflowConfig');
+            const desc = document.getElementById('modeDescription');
+            if (mode === 'roboflow') {
+                configBox.classList.remove('hidden');
+                desc.innerText = "模式：調用 Roboflow 訓練模型 API 進行推論";
             } else {
-                el.className = "flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-full bg-rose-950/60 border border-rose-800 text-rose-400";
-                el.innerHTML = `<span class="h-2 w-2 rounded-full bg-rose-400"></span><span>${text}</span>`;
+                configBox.classList.add('hidden');
+                desc.innerText = "模式：瀏覽器端純前端 WebAssembly 推論";
             }
         }
 
-        // 2. 檔案輸入監聽
+        // 3. 圖片上傳監聽
         imageInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(evt) {
-                processImage(evt.target.result);
+                originalBase64 = evt.target.result;
+                processImage(originalBase64);
             };
             reader.readAsDataURL(file);
         });
 
-        // 3. 影像前處理 (640x640 Float32 NCHW)
+        // 4. YOLO 影像前處理 (640x640)
         function preprocess(img) {
-            const modelW = 640;
-            const modelH = 640;
             const off = document.createElement('canvas');
-            off.width = modelW;
-            off.height = modelH;
+            off.width = 640; off.height = 640;
             const octx = off.getContext('2d');
-            octx.drawImage(img, 0, 0, modelW, modelH);
+            octx.drawImage(img, 0, 0, 640, 640);
+            const imgData = octx.getImageData(0, 0, 640, 640).data;
+            const floatData = new Float32Array(3 * 640 * 640);
 
-            const imgData = octx.getImageData(0, 0, modelW, modelH).data;
-            const floatData = new Float32Array(3 * modelW * modelH);
-
-            for (let i = 0; i < modelW * modelH; i++) {
+            for (let i = 0; i < 640 * 640; i++) {
                 floatData[i] = imgData[i * 4] / 255.0;
-                floatData[modelW * modelH + i] = imgData[i * 4 + 1] / 255.0;
-                floatData[2 * modelW * modelH + i] = imgData[i * 4 + 2] / 255.0;
+                floatData[640 * 640 + i] = imgData[i * 4 + 1] / 255.0;
+                floatData[2 * 640 * 640 + i] = imgData[i * 4 + 2] / 255.0;
             }
-
-            return new ort.Tensor('float32', floatData, [1, 3, modelH, modelW]);
+            return new ort.Tensor('float32', floatData, [1, 3, 640, 640]);
         }
 
-        // 4. 後處理與 NMS
-        function postprocess(output, origW, origH) {
+        // 5. YOLO 後處理
+        function postprocessYOLO(output, origW, origH) {
             const [batch, channels, numBoxes] = output.dims;
             const data = output.data;
             const boxes = [];
@@ -324,54 +300,69 @@
                     }
                 }
 
-                if (maxScore >= 0.10 && TARGET_MAP[maxClassId]) {
+                if (maxScore >= 0.35 && (maxClassId === PERSON_ID || VEHICLE_IDS.includes(maxClassId))) {
                     const rx = ((cx - w / 2) / 640) * origW;
                     const ry = ((cy - h / 2) / 640) * origH;
                     const rw = (w / 640) * origW;
                     const rh = (h / 640) * origH;
 
                     boxes.push({
-                        classId: maxClassId,
+                        type: maxClassId === PERSON_ID ? 'person' : 'vehicle',
+                        label: maxClassId === PERSON_ID ? '行人' : '車輛',
                         score: maxScore,
                         bbox: [rx, ry, rw, rh]
                     });
                 }
             }
+            return boxes;
+        }
 
-            boxes.sort((a, b) => b.score - a.score);
-            const nmsResult = [];
-            for (const b of boxes) {
-                let overlap = false;
-                for (const kept of nmsResult) {
-                    if (b.classId === kept.classId && iou(b.bbox, kept.bbox) > 0.45) {
-                        overlap = true;
-                        break;
-                    }
-                }
-                if (!overlap) nmsResult.push(b);
+        // 6. 整合 Roboflow API 推論
+        async function inferRoboflow(base64Data, origW, origH) {
+            const modelId = document.getElementById('rfModelId').value.trim();
+            const apiKey = document.getElementById('rfApiKey').value.trim();
+
+            if (!modelId || !apiKey) {
+                alert("請填入 Roboflow Model ID 與 API Key！若尚未取得，請先切回『YOLOv8 端點推論』模式。");
+                throw new Error("Roboflow credentials missing");
             }
-            return nmsResult;
+
+            const cleanBase64 = base64Data.split(',')[1] || base64Data;
+            const url = `https://detect.roboflow.com/${modelId}?api_key=${apiKey}&confidence=35`;
+
+            const res = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: cleanBase64
+            });
+
+            if (!res.ok) {
+                throw new Error(`Roboflow 回傳錯誤: ${res.statusText}`);
+            }
+
+            const json = await res.json();
+            const boxes = [];
+
+            // 解析 Roboflow 標準回傳格式
+            (json.predictions || []).forEach(p => {
+                const rx = p.x - p.width / 2;
+                const ry = p.y - p.height / 2;
+                const cls = (p.class || '').toLowerCase();
+                const isPerson = cls.includes('person') || cls.includes('pedestrian');
+                
+                boxes.push({
+                    type: isPerson ? 'person' : 'vehicle',
+                    label: p.class,
+                    score: p.confidence,
+                    bbox: [rx, ry, p.width, p.height]
+                });
+            });
+
+            return boxes;
         }
 
-        function iou(b1, b2) {
-            const [x1, y1, w1, h1] = b1;
-            const [x2, y2, w2, h2] = b2;
-            const xi1 = Math.max(x1, x2);
-            const yi1 = Math.max(y1, y2);
-            const xi2 = Math.min(x1 + w1, x2 + w2);
-            const yi2 = Math.min(y1 + h1, y2 + h2);
-            const interArea = Math.max(0, xi2 - xi1) * Math.max(0, yi2 - yi1);
-            const unionArea = w1 * h1 + w2 * h2 - interArea;
-            return interArea / unionArea;
-        }
-
-        // 5. 核心推論流程
+        // 7. 核心執行推論
         async function processImage(src) {
-            if (!yoloSession) {
-                alert("YOLO 神經網路尚未準備就緒，請稍候重試！");
-                return;
-            }
-
             dropZone.classList.add('hidden');
             loader.classList.remove('hidden');
             resultContainer.classList.add('hidden');
@@ -382,144 +373,106 @@
                 canvas.width = img.naturalWidth;
                 canvas.height = img.naturalHeight;
 
-                const inputTensor = preprocess(img);
+                try {
+                    const t0 = performance.now();
+                    let detections = [];
 
-                const t0 = performance.now();
-                const results = await yoloSession.run({ images: inputTensor });
-                const outputTensor = results[yoloSession.outputNames[0]];
-                const t1 = performance.now();
+                    if (currentMode === 'roboflow') {
+                        document.getElementById('loaderText').innerText = "連線至 Roboflow 雲端模型分析中...";
+                        detections = await inferRoboflow(src, img.naturalWidth, img.naturalHeight);
+                    } else {
+                        document.getElementById('loaderText').innerText = "YOLOv8 本地端點運算中...";
+                        const inputTensor = preprocess(img);
+                        const results = await yoloSession.run({ images: inputTensor });
+                        const outputTensor = results[yoloSession.outputNames[0]];
+                        detections = postprocessYOLO(outputTensor, img.naturalWidth, img.naturalHeight);
+                    }
 
-                const latencyMs = (t1 - t0).toFixed(0);
-                document.getElementById('statLatency').innerText = `${latencyMs} ms`;
+                    const t1 = performance.now();
+                    document.getElementById('inferenceTime').innerText = `推論耗時: ${(t1 - t0).toFixed(0)} ms (${currentMode === 'roboflow' ? 'Roboflow API' : 'YOLOv8 WASM'})`;
 
-                allDetections = postprocess(outputTensor, img.naturalWidth, img.naturalHeight);
+                    renderResults(detections);
+                    loader.classList.add('hidden');
+                    resultContainer.classList.remove('hidden');
 
-                loader.classList.add('hidden');
-                resultContainer.classList.remove('hidden');
-
-                renderCanvas();
+                } catch (err) {
+                    console.error(err);
+                    alert("推論過程發生錯誤: " + err.message);
+                    resetDemo();
+                }
             };
             img.src = src;
         }
 
-        // 6. 渲染畫面與決策儀表
-        function renderCanvas() {
-            if (!loadedImage) return;
-
+        // 8. 繪製標註與未禮讓行人告警
+        function renderResults(boxes) {
             ctx.drawImage(loadedImage, 0, 0);
 
-            const valid = allDetections.filter(d => d.score >= confidenceThreshold);
-            const signals = valid.filter(d => TARGET_MAP[d.classId].isSignal);
-            const hazards = valid.filter(d => TARGET_MAP[d.classId].isHazard);
-
-            document.getElementById('statObjects').innerText = `${valid.length} 件`;
+            const hasPerson = boxes.some(b => b.type === 'person');
+            const hasVehicle = boxes.some(b => b.type === 'vehicle');
+            const hasConflict = hasPerson && hasVehicle; // 人車同框 = 觸發未禮讓風險
 
             const fontSize = Math.max(16, Math.floor(loadedImage.naturalWidth * 0.022));
             ctx.font = `bold ${fontSize}px sans-serif`;
             ctx.textBaseline = 'top';
 
-            valid.forEach(item => {
-                const config = TARGET_MAP[item.classId];
-                const [rx, ry, rw, rh] = item.bbox;
-                const score = Math.round(item.score * 100);
-                const label = `${config.label} ${score}%`;
+            boxes.forEach(item => {
+                const isAlert = hasConflict;
+                const strokeColor = isAlert ? '#ef4444' : '#10b981';
+                const labelText = isAlert 
+                    ? `${item.label} (未禮讓風險 ${Math.round(item.score * 100)}%)`
+                    : `${item.label} (${Math.round(item.score * 100)}%)`;
 
-                ctx.lineWidth = Math.max(3, Math.floor(loadedImage.naturalWidth * 0.0035));
-                ctx.strokeStyle = config.color;
+                const [rx, ry, rw, rh] = item.bbox;
+                ctx.lineWidth = Math.max(3, Math.floor(loadedImage.naturalWidth * 0.004));
+                ctx.strokeStyle = strokeColor;
                 ctx.strokeRect(rx, ry, rw, rh);
 
-                const textWidth = ctx.measureText(label).width;
-                const padding = fontSize * 0.35;
-                ctx.fillStyle = config.color;
+                const textWidth = ctx.measureText(labelText).width;
+                const padding = fontSize * 0.3;
+                ctx.fillStyle = strokeColor;
                 ctx.fillRect(rx, ry - fontSize - (padding * 2), textWidth + (padding * 2), fontSize + (padding * 2));
 
                 ctx.fillStyle = '#ffffff';
-                ctx.fillText(label, rx + padding, ry - fontSize - padding);
+                ctx.fillText(labelText, rx + padding, ry - fontSize - padding);
             });
 
-            // 決策卡片樣式與動態等級更新
-            const riskEl = document.getElementById('statRisk');
-
-            if (signals.length > 0) {
-                riskEl.innerText = "Level 1 管制";
-                riskEl.className = "text-lg font-bold font-mono text-emerald-400";
-
-                decisionCard.className = "rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-6";
-                decisionCard.innerHTML = `
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center gap-2.5">
-                            <span class="h-3 w-3 rounded-full bg-emerald-400 animate-ping"></span>
-                            <h3 class="text-base font-bold text-emerald-300">Level 1：號誌管制路口 (Controlled Intersection)</h3>
-                        </div>
-                        <span class="text-xs font-mono px-2.5 py-1 rounded bg-emerald-900/60 text-emerald-200 border border-emerald-700/50">號誌鎖定: ${signals.length} 處</span>
+            if (hasConflict) {
+                verdictBox.className = "mt-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800";
+                verdictBox.innerHTML = `
+                    <div class="flex items-center gap-2 font-bold text-base mb-1">
+                        <i class="fa-solid fa-triangle-exclamation text-red-600"></i>
+                        <span>高風險告警：偵測到路口人車交會（未禮讓行人風險）</span>
                     </div>
-                    <p class="text-xs text-slate-300 leading-relaxed mb-4">
-                        神經網路精準捕捉交通號誌特徵。交岔路口處於時相管制下，道路通行優先權明確，請遵循號誌燈態依規行駛。
+                    <p class="text-xs text-red-700">
+                        AI 於畫面中同時鎖定行人與通行車輛。系統啟動行人防護預警，提醒車輛務必於斑馬線與路口前完全煞停禮讓！
                     </p>
-                    <div class="flex flex-wrap gap-4 text-xs font-mono text-slate-400 border-t border-emerald-900/40 pt-3">
-                        <span>衝突目標: ${hazards.length} 輛</span>
-                        <span>系統建議: 依照時相號誌行駛</span>
-                    </div>
                 `;
-            } else if (hazards.length > 0) {
-                riskEl.innerText = "Level 3 衝突";
-                riskEl.className = "text-lg font-bold font-mono text-rose-400";
-
-                decisionCard.className = "rounded-xl border border-rose-500/30 bg-rose-950/20 p-6";
-                decisionCard.innerHTML = `
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center gap-2.5">
-                            <span class="h-3 w-3 rounded-full bg-rose-400 animate-ping"></span>
-                            <h3 class="text-base font-bold text-rose-300">Level 3：無號誌高風險衝突 (High Conflict Hazard)</h3>
-                        </div>
-                        <span class="text-xs font-mono px-2.5 py-1 rounded bg-rose-900/60 text-rose-200 border border-rose-700/50">交會目標: ${hazards.length} 處</span>
+            } else if (hasPerson || hasVehicle) {
+                verdictBox.className = "mt-4 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800";
+                verdictBox.innerHTML = `
+                    <div class="flex items-center gap-2 font-bold text-base mb-1">
+                        <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                        <span>常態通行：路況安全無立即衝突</span>
                     </div>
-                    <p class="text-xs text-slate-300 leading-relaxed mb-4">
-                        未檢驗出有效號誌管制，且路口視野中已鎖定 <strong>${hazards.length} 處動態載具或用路人</strong>！此為典型巷弄交會高風險情境，系統啟動主動防衛警告，請務必減速、確認死角並依支道禮讓幹道原則行駛。
+                    <p class="text-xs text-emerald-700">
+                        未偵測到人車交會之碰撞風險，用路人維持正常行駛。
                     </p>
-                    <div class="flex flex-wrap gap-4 text-xs font-mono text-slate-400 border-t border-rose-900/40 pt-3">
-                        <span>風險等級: 高 (衝突警示)</span>
-                        <span>系統建議: 立即降速・確認左右盲區動線</span>
-                    </div>
                 `;
             } else {
-                riskEl.innerText = "Level 2 淨空";
-                riskEl.className = "text-lg font-bold font-mono text-amber-400";
-
-                decisionCard.className = "rounded-xl border border-amber-500/30 bg-amber-950/20 p-6";
-                decisionCard.innerHTML = `
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center gap-2.5">
-                            <span class="h-3 w-3 rounded-full bg-amber-400"></span>
-                            <h3 class="text-base font-bold text-amber-300">Level 2：非號誌化靜態路口 (Uncontrolled Clear)</h3>
-                        </div>
-                        <span class="text-xs font-mono px-2.5 py-1 rounded bg-amber-900/60 text-amber-200 border border-amber-700/50">路面淨空</span>
-                    </div>
-                    <p class="text-xs text-slate-300 leading-relaxed mb-4">
-                        當前影像未發現有效號誌管制，且目前無交會車流。系統判定為非號誌化巷道路段，提醒用路人行經交岔路口時，仍應維持防禦慢行。
-                    </p>
-                    <div class="flex flex-wrap gap-4 text-xs font-mono text-slate-400 border-t border-amber-900/40 pt-3">
-                        <span>風險等級: 中等 (無號誌盲區)</span>
-                        <span>系統建議: 保持慢行・注意巷口突然竄出目標</span>
-                    </div>
+                verdictBox.className = "mt-4 p-4 rounded-lg bg-slate-100 border border-slate-200 text-slate-700";
+                verdictBox.innerHTML = `
+                    <div class="font-bold text-sm mb-1">未檢驗出活動目標</div>
+                    <p class="text-xs text-slate-500">畫面中無辨識到行人或車輛。</p>
                 `;
             }
         }
 
-        function onThresholdChange(val) {
-            confidenceThreshold = parseFloat(val);
-            document.getElementById('confDisplay').innerText = confidenceThreshold.toFixed(2);
-            renderCanvas();
-        }
-
-        function resetConsole() {
+        function resetDemo() {
             resultContainer.classList.add('hidden');
             dropZone.classList.remove('hidden');
             imageInput.value = '';
             loadedImage = null;
-            document.getElementById('statObjects').innerText = "0 件";
-            document.getElementById('statRisk').innerText = "待檢驗";
-            document.getElementById('statRisk').className = "text-lg font-bold font-mono text-slate-300";
         }
     </script>
 </body>
