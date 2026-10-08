@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SafeRoad AI 實作教學講義 | 邊緣運算路口衝突辨識</title>
+    <title>SafeRoad AI 實作教學講義 | 邊緣運算與 AI 協同開發全紀錄</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,8 +15,8 @@
 </head>
 <body class="bg-slate-100/70 text-slate-700 font-sans antialiased leading-relaxed min-h-screen">
 
-    <!-- 頂部導覽列 (乾淨透明白底微陰影) -->
-    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <!-- 頂部導覽列 -->
+    <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-2.5">
                 <span class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shadow-blue-500/20">
@@ -36,28 +36,29 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
-            <!-- 左側章節目錄 (淺灰底上的白色浮島導航) -->
+            <!-- 左側章節目錄 (浮島導航) -->
             <aside class="hidden lg:block col-span-1">
                 <div class="sticky top-24 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
                     <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <i class="fa-solid fa-list-ul text-blue-600"></i> 章節目錄
+                        <i class="fa-solid fa-list-ul text-blue-600"></i> 講義章節目錄
                     </h3>
                     <ul class="space-y-1 text-xs font-semibold text-slate-600">
-                        <li><a href="#ch1" class="hover:text-blue-600 block py-1.5 border-l-2 border-transparent hover:border-blue-600 pl-2.5 transition">01. 計畫動機與學習目標</a></li>
+                        <li><a href="#ch1" class="hover:text-blue-600 block py-1.5 border-l-2 border-transparent hover:border-blue-600 pl-2.5 transition">01. 計畫動機與核心效益</a></li>
                         <li><a href="#ch2" class="hover:text-blue-600 block py-1.5 border-l-2 border-transparent hover:border-blue-600 pl-2.5 transition">02. 核心名詞大白話速查</a></li>
                         <li><a href="#ch3" class="hover:text-blue-600 block py-1.5 border-l-2 border-transparent hover:border-blue-600 pl-2.5 transition">03. 系統架構與偵測原理</a></li>
                         <li><a href="#ch4" class="hover:text-blue-600 block py-1.5 border-l-2 border-transparent hover:border-blue-600 pl-2.5 transition">04. 模型選型與比較分析</a></li>
-                        <li><a href="#ch5" class="hover:text-blue-600 block py-1.5 border-l-2 border-transparent hover:border-blue-600 pl-2.5 transition">05. 前端核心實作四步驟</a></li>
-                        <li><a href="#ch6" class="hover:text-blue-600 block py-1.5 border-l-2 border-transparent hover:border-blue-600 pl-2.5 transition">06. 實務除錯心得分享</a></li>
-                        <li><a href="#ch7" class="hover:text-blue-600 block py-1.5 border-l-2 border-transparent hover:border-blue-600 pl-2.5 transition">07. 下階段後端架構規劃</a></li>
+                        <li><a href="#ch5" class="hover:text-blue-600 block py-1.5 border-l-2 border-transparent hover:border-blue-600 pl-2.5 transition">05. 前端實作四步驟</a></li>
+                        <li><a href="#ch6" class="hover:text-blue-600 block py-1.5 border-l-2 border-transparent hover:border-blue-600 pl-2.5 transition">06. 團隊實測與避坑紀錄</a></li>
+                        <li><a href="#ch7" class="hover:text-blue-600 block py-1.5 border-l-2 border-transparent hover:border-blue-600 pl-2.5 transition">07. AI (Gemini) 生成全流程</a></li>
+                        <li><a href="#ch8" class="hover:text-blue-600 block py-1.5 border-l-2 border-transparent hover:border-blue-600 pl-2.5 transition">08. 下階段後端演進規劃</a></li>
                     </ul>
                 </div>
             </aside>
 
-            <!-- 右側主要內容 (白卡片層次，不反光、不刺眼) -->
+            <!-- 右側主要內容 -->
             <main class="col-span-1 lg:col-span-3 space-y-8">
 
-                <!-- 講義前言 Header（柔和科技感，拿掉刺眼大藍色） -->
+                <!-- 講義標頭 -->
                 <div class="bg-white rounded-2xl p-8 border border-slate-200/80 shadow-sm relative overflow-hidden">
                     <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200/80 rounded-full text-xs font-semibold text-blue-700 mb-3">
                         <i class="fa-solid fa-graduation-cap"></i> 產學合作 / 專案研究技術文件
@@ -66,7 +67,7 @@
                         純前端 Edge AI 路口人車安全偵測實作手冊
                     </h1>
                     <p class="text-slate-600 text-xs sm:text-sm leading-relaxed max-w-3xl">
-                        本教材完整記載 SafeRoad AI 如何在「零主機採購、零伺服器維護」的條件下，直接於使用者瀏覽器本地執行神經網絡，即時辨識行人與車輛，並即時演算「未禮讓行人」的空間交會衝突。
+                        本教材完整記錄 SafeRoad AI 如何在「零主機採購、零伺服器維護」的條件下，直接於瀏覽器本地執行輕量神經網路，即時辨識行人與車輛，並即時演算「未禮讓行人」的空間交會衝突。
                     </p>
                 </div>
 
@@ -74,10 +75,10 @@
                 <section id="ch1" class="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
                     <div class="flex items-center gap-2.5 border-b border-slate-100 pb-3">
                         <span class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 font-bold flex items-center justify-center text-xs">01</span>
-                        <h2 class="text-base sm:text-lg font-bold text-slate-900">計畫動機與學習目標</h2>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-900">計畫動機與核心效益</h2>
                     </div>
                     <p class="text-xs sm:text-sm text-slate-600">
-                        傳統「科技執法」依賴採購昂貴的專用攝影機與 GPU 主機，導致偏鄉或一般校園周邊難以普及。本專案核心目標：<strong>直接利用既有監視器畫面透過前端邊緣運算，打造平民化的交通安全網。</strong>
+                        傳統科技執法需採購百萬專用攝影機與 GPU 主機，偏鄉與校園周邊難以推廣。本專案核心目標：<strong>直接利用既有監視器畫面透過前端邊緣運算，打造平民化的交通安全網。</strong>
                     </p>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
                         <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
@@ -101,7 +102,7 @@
                         <span class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 font-bold flex items-center justify-center text-xs">02</span>
                         <h2 class="text-base sm:text-lg font-bold text-slate-900">核心名詞「大白話」速查表</h2>
                     </div>
-                    <p class="text-xs text-slate-500">報告或技術問答時，可使用以下生活化比喻清楚表達概念：</p>
+                    <p class="text-xs text-slate-500">開會討論或向非技術同仁說明時，可用以下比喻快速表達：</p>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs border-collapse">
                             <thead>
@@ -154,7 +155,7 @@
                     <div class="space-y-3 text-xs sm:text-sm text-slate-600">
                         <h3 class="font-bold text-slate-900 text-sm">第一階段：AI 目標檢測（辨識人與車）</h3>
                         <p class="text-xs leading-relaxed text-slate-600">
-                            神經網路將圖片正規化並抽取高階幾何特徵，預測出物體分類與邊界框座標 $(x, y, w, h)$。系統將過濾信心門檻定為 <code>0.35</code>，有效排除街景地圖圖標等背景雜訊。
+                            神經網路將圖片正規化並抽取高階幾何特徵，預測出物體分類與邊界框座標 $(x, y, w, h)$。系統將過濾信心門檻定為 <code>0.35</code>（巷弄可微調至 <code>0.28</code>），有效排除街景地圖圖標等背景雜訊。
                         </p>
                         <h3 class="font-bold text-slate-900 text-sm">第二階段：未禮讓行人衝突判定（決策邏輯）</h3>
                         <p class="text-xs leading-relaxed text-slate-600">
@@ -262,31 +263,119 @@ ctx.strokeRect(x, y, width, height);</code></pre>
                 <section id="ch6" class="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
                     <div class="flex items-center gap-2.5 border-b border-slate-100 pb-3">
                         <span class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 font-bold flex items-center justify-center text-xs">06</span>
-                        <h2 class="text-base sm:text-lg font-bold text-slate-900">實務除錯心得（工讀生踩坑經驗分享）</h2>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-900">團隊實測反饋與避坑經驗</h2>
                     </div>
                     <div class="space-y-3 text-xs">
+                        <div class="p-3.5 bg-blue-50/60 border-l-4 border-blue-500 rounded-r-xl border border-blue-100">
+                            <div class="font-bold text-blue-900 mb-1">
+                                <i class="fa-solid fa-flask-vial mr-1"></i> 團隊實測反饋：無號誌巷弄辨識挑戰
+                            </div>
+                            <p class="text-slate-600 leading-relaxed">
+                                <strong>現象</strong>：內部實測反映「有紅綠燈之主幹道路口辨識率高，但無號誌小巷弄較難抓到人車」。<br>
+                                <strong>分析</strong>：巷弄背景存在大量招牌、鐵捲門與路邊違停車輛，人車特徵容易被遮蔽（Occlusion）。<br>
+                                <strong>因應對策</strong>：目前展示端先將偵測門檻彈性降至 <code>0.28</code> 提高靈敏度；並正式列為下一階段使用 <strong>Roboflow</strong> 進行台灣在地巷弄資料集微調訓練之核心目標！
+                            </p>
+                        </div>
+
                         <div class="p-3.5 bg-rose-50/60 border-l-4 border-rose-500 rounded-r-xl border border-rose-100">
-                            <div class="font-bold text-rose-800 mb-1">踩坑 1：學校電腦開網頁一直「轉圈圈卡死」</div>
+                            <div class="font-bold text-rose-800 mb-1">
+                                <i class="fa-solid fa-triangle-exclamation mr-1"></i> 踩坑 1：校園網路環境模型載入卡死
+                            </div>
                             <p class="text-rose-700 leading-relaxed">
-                                <strong>原因</strong>：代碼寫死讀取本地 <code>./yolov8n.onnx</code>（12MB），但 GitHub 未上傳該二進位檔；備用 CDN 又遭學校 TANet 防火牆阻擋。<br>
-                                <strong>解法</strong>：展示端改用分段加載的 <code>coco-ssd</code>，檔案僅 2MB，學校網路與手機行動數據皆能秒開。
+                                <strong>原因</strong>：前版嘗試載入 12MB 之單一 ONNX 模型，易受校園 TANet 防火牆阻擋或逾時。<br>
+                                <strong>解法</strong>：展示端改用分段加載的 2MB 輕量 MobileNet-SSD，各類平板與手機行動網路皆能秒開。
                             </p>
                         </div>
 
                         <div class="p-3.5 bg-amber-50/60 border-l-4 border-amber-500 rounded-r-xl border border-amber-100">
-                            <div class="font-bold text-amber-800 mb-1">踩坑 2：高解析度街景照片上「標籤字體變米粒」</div>
+                            <div class="font-bold text-amber-800 mb-1">
+                                <i class="fa-solid fa-font mr-1"></i> 踩坑 2：高解析度街景照片上標籤字體失真
+                            </div>
                             <p class="text-amber-700 leading-relaxed">
-                                <strong>原因</strong>：固定設定 <code>font: 14px</code>，遇到 4K 或高解析度照片時，字體相對縮小至無法閱讀。<br>
-                                <strong>解法</strong>：改採畫面寬度百分比計算 <code>Math.floor(img.naturalWidth * 0.022)</code>，無論解析度高低皆能清晰呈現。
+                                <strong>原因</strong>：固定設定 14px 字體，遇 4K 照片時文字縮小至無法辨識。<br>
+                                <strong>解法</strong>：改採畫布寬度百分比動態縮放 <code>Math.floor(img.naturalWidth * 0.022)</code>。
                             </p>
                         </div>
                     </div>
                 </section>
 
-                <!-- 第七章 -->
-                <section id="ch7" class="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                <!-- 第七章：老師要求的 AI 生成步驟 -->
+                <section id="ch7" class="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200/80 shadow-sm space-y-5">
                     <div class="flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                        <span class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 font-bold flex items-center justify-center text-xs">07</span>
+                        <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-200 font-bold flex items-center justify-center text-xs">07</span>
+                        <div>
+                            <h2 class="text-base sm:text-lg font-bold text-slate-900">AI (Gemini) 輔助系統生成步驟全紀錄</h2>
+                            <p class="text-[11px] text-slate-400">如何透過精準提示詞（Prompts）讓 AI 協同完成從需求到部署的全流程</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 text-xs">
+                        <!-- 步驟 1 -->
+                        <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-slate-900 text-sm"><i class="fa-solid fa-1 text-blue-600 mr-1.5"></i> 階段一：需求定義與純前端原型提示 (Prompting)</span>
+                                <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-mono">架構定調</span>
+                            </div>
+                            <p class="text-slate-600">
+                                <strong>開發痛點</strong>：傳統科技執法需百萬主機，學生專題/偏鄉無伺服器預算。<br>
+                                <strong>向 Gemini 下達的核心提示詞</strong>：
+                            </p>
+                            <div class="bg-slate-900 text-slate-200 p-3 rounded-lg font-mono text-[11px] leading-relaxed">
+                                "我想做一個 SafeRoad AI 交通安全檢測網頁，不要架設後端 Python 伺服器，請直接用純 HTML + Tailwind CSS + TensorFlow.js (coco-ssd)，讓使用者上傳路口街景照片後，純前端在瀏覽器辨識出『行人』與『車輛』。"
+                            </div>
+                        </div>
+
+                        <!-- 步驟 2 -->
+                        <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-slate-900 text-sm"><i class="fa-solid fa-2 text-blue-600 mr-1.5"></i> 階段二：交通決策邏輯演算法注入</span>
+                                <span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-mono">邏輯生成</span>
+                            </div>
+                            <p class="text-slate-600">
+                                <strong>開發痛點</strong>：模型只會畫框框，不知道什麼叫「未禮讓行人」。<br>
+                                <strong>向 Gemini 下達的核心提示詞</strong>：
+                            </p>
+                            <div class="bg-slate-900 text-slate-200 p-3 rounded-lg font-mono text-[11px] leading-relaxed">
+                                "請在原本的偵測代碼中加入判斷：當畫面上同時偵測到『弱勢行人 (person)』與『動力車輛 (car/motorcycle)』時，將所有方框即時由綠色切換為紅色高風險告警，並在下方跳出『未禮讓行人預警』的狀態通知卡片。"
+                            </div>
+                        </div>
+
+                        <!-- 步驟 3 -->
+                        <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-slate-900 text-sm"><i class="fa-solid fa-3 text-blue-600 mr-1.5"></i> 階段三：環境踩坑與模型降載重構</span>
+                                <span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-mono">除錯迭代</span>
+                            </div>
+                            <p class="text-slate-600">
+                                <strong>開發痛點</strong>：嘗試改用 12MB 的 YOLOv8-ONNX 模型，但在學校 TANet 網路會卡死在加載階段。<br>
+                                <strong>向 Gemini 下達的核心提示詞</strong>：
+                            </p>
+                            <div class="bg-slate-900 text-slate-200 p-3 rounded-lg font-mono text-[11px] leading-relaxed">
+                                "線上展示版本不要再連線下載 12MB 的大型 ONNX 權重檔，請退回採用 2MB、可分段加載的 MobileNet-SSD 架構，但介面保留 Roboflow API 與自訂模型的擴充欄位，確保老舊電腦與手機行動網路都能秒開秒跑。"
+                            </div>
+                        </div>
+
+                        <!-- 步驟 4 -->
+                        <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-slate-900 text-sm"><i class="fa-solid fa-4 text-blue-600 mr-1.5"></i> 階段四：視覺 UI 優化與講義網頁化</span>
+                                <span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-mono">成果落地</span>
+                            </div>
+                            <p class="text-slate-600">
+                                <strong>開發痛點</strong>：死白背景過於刺眼、且需配合專案規格整理為線上技術講義網頁。<br>
+                                <strong>向 Gemini 下達的核心提示詞</strong>：
+                            </p>
+                            <div class="bg-slate-900 text-slate-200 p-3 rounded-lg font-mono text-[11px] leading-relaxed">
+                                "請參考線上教材網頁結構，幫我生成一份 tutorial.html 教學講義。不要刺眼的大片死白，採用柔和的 slate 灰階與科技藍卡片層次，將專有名詞改寫為通俗白話，並包含從前端到後端演進的架構圖。"
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 第八章 -->
+                <section id="ch8" class="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                        <span class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 font-bold flex items-center justify-center text-xs">08</span>
                         <h2 class="text-base sm:text-lg font-bold text-slate-900">下階段後端演進規劃 (Roadmap)</h2>
                     </div>
                     <p class="text-xs text-slate-600">
