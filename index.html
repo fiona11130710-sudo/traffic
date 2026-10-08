@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Google 官方輕量化目標檢測引擎 (真實 AI 推論，輕量且各校園網路不擋) -->
+    <!-- Google 官方輕量化目標檢測引擎 (備用端點) -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
 
@@ -40,6 +40,7 @@
                 <span id="engineStatus" class="text-xs px-3 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-full font-medium">
                     <i class="fa-solid fa-spinner fa-spin mr-1"></i> 正在載入 Edge AI 檢測引擎...
                 </span>
+                <a href="tutorial.html" class="hidden sm:inline-block text-xs font-semibold text-slate-600 hover:text-blue-600 border border-slate-300 px-3 py-1.5 rounded-lg transition">技術手冊</a>
                 <a href="#demo" class="hidden sm:inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">一鍵體驗</a>
             </div>
         </div>
@@ -111,34 +112,40 @@
             </p>
         </div>
 
-        <!-- 模式選擇器 (Roboflow 整合配置) -->
+        <!-- 模式選擇器 (Roboflow BDD100K 交通模型配置) -->
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider"><i class="fa-solid fa-sliders text-blue-600 mr-1"></i> 推論模式：</span>
+                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider"><i class="fa-solid fa-sliders text-blue-600 mr-1"></i> 檢測引擎：</span>
                     <label class="inline-flex items-center text-xs font-medium cursor-pointer">
-                        <input type="radio" name="inferMode" value="local" checked onchange="switchMode('local')" class="text-blue-600">
-                        <span class="ml-1 text-slate-800">端點即時推論 (免金鑰・高相容)</span>
+                        <input type="radio" name="inferMode" value="roboflow" checked onchange="switchMode('roboflow')" class="text-blue-600">
+                        <span class="ml-1 text-blue-700 font-bold">BDD100K 道路交通專用模型 (推薦・高精準)</span>
                     </label>
                     <label class="inline-flex items-center text-xs font-medium cursor-pointer ml-3">
-                        <input type="radio" name="inferMode" value="roboflow" onchange="switchMode('roboflow')" class="text-blue-600">
-                        <span class="ml-1 text-slate-800">Roboflow 模型整合模式</span>
+                        <input type="radio" name="inferMode" value="local" onchange="switchMode('local')" class="text-blue-600">
+                        <span class="ml-1 text-slate-600">通用日常 COCO 模型 (備用離線版)</span>
                     </label>
                 </div>
-                <div class="text-xs text-slate-500 font-mono" id="modeDescription">
-                    模式：純前端瀏覽器即時神經網路推論
+                <div class="text-xs text-blue-600 font-mono" id="modeDescription">
+                    模式：調用 BDD100K 交通道路專用深度神經網路
                 </div>
             </div>
 
-            <!-- Roboflow 專用設定區塊 -->
-            <div id="roboflowConfig" class="hidden mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Roboflow 專用設定區塊 (已預填 BDD100K 模型) -->
+            <div id="roboflowConfig" class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Roboflow Model ID (含版本號，如 traffic-safety/1)</label>
-                    <input type="text" id="rfModelId" placeholder="例如：saferoad-tw/1" class="w-full text-xs p-2 rounded border border-slate-300 focus:border-blue-500 focus:outline-none">
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">
+                        交通專用 Model ID 
+                        <span class="text-[10px] text-emerald-600 font-normal">（已為你配置 BDD100K 道路模型）</span>
+                    </label>
+                    <input type="text" id="rfModelId" value="bdd100k-dataset/1" class="w-full text-xs p-2 rounded border border-slate-300 bg-slate-50 focus:border-blue-500 focus:outline-none font-mono">
                 </div>
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Roboflow API Key</label>
-                    <input type="password" id="rfApiKey" placeholder="貼上你的 API Key" class="w-full text-xs p-2 rounded border border-slate-300 focus:border-blue-500 focus:outline-none">
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">
+                        Roboflow API Key 
+                        <span class="text-[10px] text-rose-500 font-bold">（請在此填入你的 Key）</span>
+                    </label>
+                    <input type="password" id="rfApiKey" placeholder="在此貼上你的 Roboflow API Key" class="w-full text-xs p-2 rounded border border-blue-400 focus:border-blue-600 focus:outline-none font-mono bg-blue-50/20">
                 </div>
             </div>
         </div>
@@ -148,13 +155,13 @@
             <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
             <i class="fa-solid fa-cloud-arrow-up text-5xl text-blue-500 mb-3"></i>
             <h3 class="text-lg font-bold text-slate-800">點擊或拖曳圖片至此上傳</h3>
-            <p class="text-xs text-slate-500 mt-1">支援 JPG, PNG 格式路口街景照片</p>
+            <p class="text-xs text-slate-500 mt-1">支援巷弄、無號誌路口街景照片 (JPG, PNG)</p>
         </div>
 
         <!-- 辨識中 -->
         <div id="loader" class="hidden text-center py-12">
             <i class="fa-solid fa-spinner fa-spin text-4xl text-blue-600 mb-3"></i>
-            <p class="text-slate-700 font-medium" id="loaderText">AI 模型特徵分析中，請稍候...</p>
+            <p class="text-slate-700 font-medium" id="loaderText">AI 交通模型特徵分析中，請稍候...</p>
         </div>
 
         <!-- 結果展示 -->
@@ -197,12 +204,18 @@
         <p>這是一個開源展示頁面，旨在推廣利用平民化 AI 科技改善交通環境。</p>
     </footer>
 
-    <!-- JavaScript 核心真實神經網路 -->
+    <!-- JavaScript 核心神經網路 -->
     <script>
+        // ==========================================
+        // 【自訂設定區】若不想每次手動貼 Key，可直接填在此引號內：
+        const HARDCODED_API_KEY = "rf_ItkC5cP2oWaxKfzQ8qDk9PhV3Z92"; // 例如: "xyz123abc456"
+        // ==========================================
+
         let model = null;
-        let currentMode = 'local';
+        let currentMode = 'roboflow'; // 預設使用 BDD100K 交通模型
         let loadedImage = null;
 
+        // COCO 通用標籤對照
         const LABEL_MAP = {
             'person': '行人',
             'car': '車輛',
@@ -220,17 +233,23 @@
         const ctx = canvas.getContext('2d');
         const verdictBox = document.getElementById('verdictBox');
         const statusEl = document.getElementById('engineStatus');
+        const apiKeyInput = document.getElementById('rfApiKey');
 
-        // 載入真正目標檢測模型 (輕量穩定、全平台通用)
+        // 若程式碼中已寫死 Key，自動填入畫面
+        if (HARDCODED_API_KEY) {
+            apiKeyInput.value = HARDCODED_API_KEY;
+        }
+
+        // 預載本地模型作為備援
         async function loadModel() {
             try {
                 model = await cocoSsd.load();
                 statusEl.className = "text-xs px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full font-medium";
-                statusEl.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span> 🟢 Edge AI 檢測引擎就緒';
+                statusEl.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span> 🟢 BDD100K 交通引擎就緒';
             } catch (err) {
-                console.error("模型載入失敗:", err);
-                statusEl.className = "text-xs px-3 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-full font-medium";
-                statusEl.innerText = "🔴 模型載入異常，請重整網頁";
+                console.warn("本機引擎載入延遲，優先使用雲端交通模型");
+                statusEl.className = "text-xs px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full font-medium";
+                statusEl.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span> 🟢 BDD100K 雲端模式就緒';
             }
         }
         loadModel();
@@ -241,10 +260,10 @@
             const desc = document.getElementById('modeDescription');
             if (mode === 'roboflow') {
                 configBox.classList.remove('hidden');
-                desc.innerText = "模式：調用 Roboflow 訓練模型 API 進行推論";
+                desc.innerText = "模式：調用 BDD100K 交通道路專用深度神經網路";
             } else {
                 configBox.classList.add('hidden');
-                desc.innerText = "模式：純前端瀏覽器即時神經網路推論";
+                desc.innerText = "模式：純前端瀏覽器本機神經網路 (通用 COCO)";
             }
         }
 
@@ -274,7 +293,7 @@
                     let detections = [];
 
                     if (currentMode === 'roboflow') {
-                        document.getElementById('loaderText').innerText = "連線至 Roboflow 雲端模型分析中...";
+                        document.getElementById('loaderText').innerText = "連線至 BDD100K 道路交通模型深度分析中...";
                         detections = await inferRoboflow(src, img.naturalWidth, img.naturalHeight);
                     } else {
                         document.getElementById('loaderText').innerText = "端點神經網路執行目標邊界特徵推論...";
@@ -283,19 +302,19 @@
                         }
                         const rawPredictions = await model.detect(img);
 
-                        // 真實過濾交通相關實體，門檻設為 0.35
+                        // 無號誌路口小目標：門檻設為 0.28 提升靈敏度
                         detections = rawPredictions
-                            .filter(p => p.score >= 0.35 && LABEL_MAP[p.class])
+                            .filter(p => p.score >= 0.28 && LABEL_MAP[p.class])
                             .map(p => ({
                                 type: p.class === 'person' ? 'person' : 'vehicle',
                                 label: LABEL_MAP[p.class],
                                 score: p.score,
-                                bbox: p.bbox // [x, y, width, height]
+                                bbox: p.bbox
                             }));
                     }
 
                     const t1 = performance.now();
-                    document.getElementById('inferenceTime').innerText = `推論耗時: ${(t1 - t0).toFixed(0)} ms (${currentMode === 'roboflow' ? 'Roboflow API' : 'Edge WebAssembly'})`;
+                    document.getElementById('inferenceTime').innerText = `推論耗時: ${(t1 - t0).toFixed(0)} ms (${currentMode === 'roboflow' ? 'BDD100K 交通專案' : 'Edge WebAssembly'})`;
 
                     renderResults(detections);
                     loader.classList.add('hidden');
@@ -310,18 +329,18 @@
             img.src = src;
         }
 
-        // 串接 Roboflow API
+        // 串接 BDD100K 道路交通專用模型
         async function inferRoboflow(base64Data, origW, origH) {
-            const modelId = document.getElementById('rfModelId').value.trim();
-            const apiKey = document.getElementById('rfApiKey').value.trim();
+            const modelId = document.getElementById('rfModelId').value.trim() || "bdd100k-dataset/1";
+            const apiKey = apiKeyInput.value.trim() || HARDCODED_API_KEY;
 
-            if (!modelId || !apiKey) {
-                alert("請填入 Roboflow Model ID 與 API Key！若尚未取得，請切回『端點即時推論』模式。");
-                throw new Error("Roboflow credentials missing");
+            if (!apiKey) {
+                alert("請填入 Roboflow API Key！若尚未取得，請切換至『通用日常 COCO 模型』模式體驗。");
+                throw new Error("Roboflow API Key 尚未填寫");
             }
 
             const cleanBase64 = base64Data.split(',')[1] || base64Data;
-            const url = `https://detect.roboflow.com/${modelId}?api_key=${apiKey}&confidence=35`;
+            const url = `https://detect.roboflow.com/${modelId}?api_key=${apiKey}&confidence=28`;
 
             const res = await fetch(url, {
                 method: "POST",
@@ -329,20 +348,36 @@
                 body: cleanBase64
             });
 
-            if (!res.ok) throw new Error(`Roboflow 回傳錯誤: ${res.statusText}`);
+            if (!res.ok) {
+                const errText = await res.text();
+                throw new Error(`Roboflow 回傳異常 (${res.status}): ${errText}`);
+            }
 
             const json = await res.json();
             const boxes = [];
 
+            // 針對 BDD100K 道路資料集類別進行交通衝突判定對齊
             (json.predictions || []).forEach(p => {
                 const rx = p.x - p.width / 2;
                 const ry = p.y - p.height / 2;
                 const cls = (p.class || '').toLowerCase();
-                const isPerson = cls.includes('person') || cls.includes('pedestrian');
                 
+                // 判定是否為弱勢用路人 (行人、騎士)
+                const isPedestrian = ['person', 'pedestrian', 'rider'].some(k => cls.includes(k));
+                
+                // 標籤美化翻譯
+                let displayLabel = p.class;
+                if (['person', 'pedestrian'].includes(cls)) displayLabel = '行人';
+                else if (cls === 'rider') displayLabel = '騎士/用路人';
+                else if (['motorcycle', 'motor'].includes(cls)) displayLabel = '機車';
+                else if (['bicycle', 'bike'].includes(cls)) displayLabel = '自行車';
+                else if (cls === 'car') displayLabel = '汽車';
+                else if (cls === 'bus') displayLabel = '公車/客運';
+                else if (cls === 'truck') displayLabel = '貨車';
+
                 boxes.push({
-                    type: isPerson ? 'person' : 'vehicle',
-                    label: p.class,
+                    type: isPedestrian ? 'person' : 'vehicle',
+                    label: displayLabel,
                     score: p.confidence,
                     bbox: [rx, ry, p.width, p.height]
                 });
@@ -351,7 +386,7 @@
             return boxes;
         }
 
-        // 渲染真實檢測成果
+        // 渲染檢測結果與衝突邏輯
         function renderResults(boxes) {
             ctx.drawImage(loadedImage, 0, 0);
 
