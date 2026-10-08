@@ -1,1 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeRoad AI 實作教學講義 | 邊緣運算路口衝突辨識</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html { scroll-behavior: smooth; }
+        .prose pre { background-color: #1e293b; color: #f8fafc; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans leading-relaxed">
 
+    <!-- 頂部導覽 -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-book-bookmark text-blue-600 text-2xl"></i>
+                <span class="font-extrabold text-xl text-slate-900 tracking-tight">SafeRoad <span class="text-blue-600">AI</span></span>
+                <span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full font-semibold">系統實作教學講義</span>
+            </div>
+            <div>
+                <a href="index.html" class="inline-flex items-center gap-1.5 text-xs font-bold bg-blue-600 text-white px-3.5 py-2 rounded-lg hover:bg-blue-700 transition">
+                    <i class="fa-solid fa-play"></i> 返回系統展示 (Demo)
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+            <!-- 左側章節快速導航 (Sticky Menu) -->
+            <aside class="hidden lg:block col-span-1">
+                <div class="sticky top-24 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">講義章節目錄</h3>
+                    <ul class="space-y-2 text-sm font-medium text-slate-600">
+                        <li><a href="#ch1" class="hover:text-blue-600 block py-1 border-l-2 border-transparent hover:border-blue-600 pl-2">一、計畫動機與學習目標</a></li>
+                        <li><a href="#ch2" class="hover:text-blue-600 block py-1 border-l-2 border-transparent hover:border-blue-600 pl-2">二、核心名詞「大白話」說明</a></li>
+                        <li><a href="#ch3" class="hover:text-blue-600 block py-1 border-l-2 border-transparent hover:border-blue-600 pl-2">三、系統架構與偵測原理</a></li>
+                        <li><a href="#ch4" class="hover:text-blue-600 block py-1 border-l-2 border-transparent hover:border-blue-600 pl-2">四、模型選型與比較分析</a></li>
+                        <li><a href="#ch5" class="hover:text-blue-600 block py-1 border-l-2 border-transparent hover:border-blue-600 pl-2">五、前端核心步驟分解</a></li>
+                        <li><a href="#ch6" class="hover:text-blue-600 block py-1 border-l-2 border-transparent hover:border-blue-600 pl-2">六、實務除錯心得 (避坑指南)</a></li>
+                        <li><a href="#ch7" class="hover:text-blue-600 block py-1 border-l-2 border-transparent hover:border-blue-600 pl-2">七、未來後端架構規劃 (Roadmap)</a></li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- 右側主要教學內容 -->
+            <main class="col-span-1 lg:col-span-3 space-y-12">
+
+                <!-- 講義前言 Header -->
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-white shadow-lg">
+                    <span class="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-semibold mb-3">產學合作 / 專題研究實作手冊</span>
+                    <h1 class="text-3xl font-black mb-3">純前端 Edge AI 路口人車安全偵測教學</h1>
+                    <p class="text-blue-100 text-sm leading-relaxed">
+                        本手冊完整記錄 SafeRoad AI 如何在「零伺服器、零採購成本」的條件下，透過瀏覽器直接執行 AI 模型，完成街景照片中的行人與車輛辨識，並即時運算「未禮讓行人」的空間交會衝突。
+                    </p>
+                </div>
+
+                <!-- 第一章 -->
+                <section id="ch1" class="bg-white p-6 sm:p-8 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+                        <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-sm">01</span>
+                        <h2 class="text-xl font-bold text-slate-900">計畫動機與學習目標</h2>
+                    </div>
+                    <p class="text-sm text-slate-600">
+                        傳統「科技執法」或智慧監控通常需要採購數十萬甚至百萬元的專用攝影機與 GPU 主機，導致偏鄉或一般校園巷弄難以普及。本專案核心概念為：<strong>直接將現有監視器畫面透過 Web 前端進行邊緣運算，實現平民化的智慧交通守護。</strong>
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div class="font-bold text-slate-800 mb-1"><i class="fa-solid fa-coins text-amber-500 mr-1"></i> 零主機成本</div>
+                            <div class="text-slate-500">使用者自己的電腦/手機運算，省去維護雲端伺服器費用。</div>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div class="font-bold text-slate-800 mb-1"><i class="fa-solid fa-user-shield text-emerald-500 mr-1"></i> 保障用路人隱私</div>
+                            <div class="text-slate-500">影像完全留在前端瀏覽器處理，不需上傳遠端，無外流風險。</div>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div class="font-bold text-slate-800 mb-1"><i class="fa-solid fa-bolt text-blue-500 mr-1"></i> 秒級即時反應</div>
+                            <div class="text-slate-500">省去上傳與下載的網路來回時間，直接本機 50~100ms 輸出結果。</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 第二章 -->
+                <section id="ch2" class="bg-white p-6 sm:p-8 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+                        <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-sm">02</span>
+                        <h2 class="text-xl font-bold text-slate-900">核心名詞「大白話」速查表</h2>
+                    </div>
+                    <p class="text-xs text-slate-500">面對技術評審或老師提問時，請用以下生活化比喻進行說明：</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700">
+                                    <th class="p-3 font-semibold rounded-l">專業技術名詞</th>
+                                    <th class="p-3 font-semibold">白話怎麼講</th>
+                                    <th class="p-3 font-semibold rounded-r">直覺生活比喻</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-slate-600">
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">邊緣運算 (Edge AI)</td>
+                                    <td class="p-3">「直接在使用者網頁裡面跑 AI」</td>
+                                    <td class="p-3">像自己拿計算機算題目，不用每題打電話回辦公室問。</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">模型推論 (Inference)</td>
+                                    <td class="p-3">「模型看照片、認出東西的過程」</td>
+                                    <td class="p-3">就像眼睛看到照片，大腦在 0.1 秒內反應出「那是機車」。</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">特徵提取 (Feature Extraction)</td>
+                                    <td class="p-3">「AI 抓出車輪、把手或人臉輪廓」</td>
+                                    <td class="p-3">人認機車不是死背整張照片，而是認「兩個輪子加車把」。</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">非極大值抑制 (NMS)</td>
+                                    <td class="p-3">「刪掉重複畫出的框框」</td>
+                                    <td class="p-3">AI 框同一台車畫了 5 個重疊框，只留下分數最高的那 1 個。</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-800">Roboflow API</td>
+                                    <td class="p-3">「把照片傳給專門訓練好的專家」</td>
+                                    <td class="p-3">像用 LINE 把路況傳給專家，專家秒標記好回傳給你。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 第三章 -->
+                <section id="ch3" class="bg-white p-6 sm:p-8 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+                        <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-sm">03</span>
+                        <h2 class="text-xl font-bold text-slate-900">系統運作流程與偵測原理</h2>
+                    </div>
+                    <div class="p-4 bg-slate-900 text-slate-200 rounded-lg font-mono text-xs overflow-x-auto">
+                        [使用者上傳照片] ──> [前端 Canvas 讀取像素] ──> [MobileNet/YOLO 特徵提取] ──> [過濾交通目標 (人/車)] ──> [幾何衝突演算 (人車同框?)] ──> [紅框告警 / 綠框常態]
+                    </div>
+                    <div class="space-y-3 text-sm text-slate-600">
+                        <h3 class="font-bold text-slate-800 text-base">第一階段：AI 目標檢測（辨識人與車）</h3>
+                        <p class="text-xs leading-relaxed">
+                            神經網路將圖片縮小並掃描特徵（如車頭形狀、人體形體），預測出畫面上所有物體的類別與中心座標 $(x, y, w, h)$。系統設定信心門檻為 <code>0.35</code>，自動濾除非交通物件或地圖圖標。
+                        </p>
+                        <h3 class="font-bold text-slate-800 text-base">第二階段：未禮讓行人衝突判定（決策邏輯）</h3>
+                        <p class="text-xs leading-relaxed">
+                            系統將抓到的目標分成「弱勢行人（`person`）」與「動力載具（`car/motorcycle/bus/truck`）」：
+                        </p>
+                        <ul class="list-disc list-inside text-xs space-y-1 text-slate-600 pl-2">
+                            <li><span class="font-semibold text-emerald-600">安全通行（綠標）</span>：路口僅有單純車流通過，或僅有行人在行走，無交會風險。</li>
+                            <li><span class="font-semibold text-red-600">未禮讓高風險告警（紅標）</span>：路口或斑馬線交會區域內，<strong>同時偵測到穿越行人與行駛中之載具</strong>，判定路權搶越，即刻標註紅色警報。</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- 第四章 -->
+                <section id="ch4" class="bg-white p-6 sm:p-8 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+                        <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-sm">04</span>
+                        <h2 class="text-xl font-bold text-slate-900">模型架構評估與選型</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700">
+                                    <th class="p-3 font-semibold">評估指標</th>
+                                    <th class="p-3 font-semibold">方案 A：YOLOv8n (ONNX Runtime)</th>
+                                    <th class="p-3 font-semibold text-blue-600">方案 B：MobileNetV2-SSD (TFJS)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-slate-600">
+                                <tr>
+                                    <td class="p-3 font-bold">檔案大小</td>
+                                    <td class="p-3">約 12 MB (單一二進位檔)</td>
+                                    <td class="p-3 text-blue-700 font-medium">約 2 ~ 3 MB (切碎分段加載)</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold">校園網路相容性</td>
+                                    <td class="p-3">易受 TANet 防火牆擋住或下載逾時</td>
+                                    <td class="p-3 text-blue-700 font-medium">極佳，各類平板、學校桌機秒開秒跑</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold">推論精確度</td>
+                                    <td class="p-3">高，對台灣高密度機車辨識極佳</td>
+                                    <td class="p-3 text-blue-700 font-medium">優良，滿足展示與原型驗證需求</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold">專案最佳定位</td>
+                                    <td class="p-3">本機開發環境 / 高階終端測試</td>
+                                    <td class="p-3 text-blue-700 font-medium"><strong>線上 GitHub Pages 成果展示</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 第五章 -->
+                <section id="ch5" class="bg-white p-6 sm:p-8 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+                        <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-sm">05</span>
+                        <h2 class="text-xl font-bold text-slate-900">核心程式實作精華（四步法）</h2>
+                    </div>
+                    
+                    <div class="space-y-4 text-xs">
+                        <div>
+                            <div class="font-bold text-slate-800 mb-1">步驟 1：引入輕量化 CDN 腳本</div>
+                            <pre class="p-3 rounded-lg overflow-x-auto text-[11px]"><code>&lt;!-- 引入 TensorFlow.js 與 COCO-SSD 目標檢測函式庫 --&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"&gt;&lt;/script&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"&gt;&lt;/script&gt;</code></pre>
+                        </div>
+
+                        <div>
+                            <div class="font-bold text-slate-800 mb-1">步驟 2：非同步加載模型並進行偵測</div>
+                            <pre class="p-3 rounded-lg overflow-x-auto text-[11px]"><code>// 非同步加載模型
+const model = await cocoSsd.load();
+
+// 輸入上傳之路口圖片並取得預測清單
+const predictions = await model.detect(imgElement);</code></pre>
+                        </div>
+
+                        <div>
+                            <div class="font-bold text-slate-800 mb-1">步驟 3：過濾目標並判定人車衝突</div>
+                            <pre class="p-3 rounded-lg overflow-x-auto text-[11px]"><code>// 1. 篩選信心值大於 0.35 之人與車
+const targets = predictions.filter(p => p.score >= 0.35 && ['person', 'car', 'motorcycle'].includes(p.class));
+
+// 2. 判定是否同時存在行人與車輛
+const hasPerson = targets.some(t => t.class === 'person');
+const hasVehicle = targets.some(t => ['car', 'motorcycle'].includes(t.class));
+const isConflict = hasPerson && hasVehicle; // 觸發未禮讓行人告警</code></pre>
+                        </div>
+
+                        <div>
+                            <div class="font-bold text-slate-800 mb-1">步驟 4：動態 Canvas 標註繪圖</div>
+                            <pre class="p-3 rounded-lg overflow-x-auto text-[11px]"><code>// 若有衝突顯示紅色，無衝突顯示綠色
+ctx.strokeStyle = isConflict ? '#ef4444' : '#10b981';
+ctx.strokeRect(x, y, width, height);</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 第六章 -->
+                <section id="ch6" class="bg-white p-6 sm:p-8 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+                        <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-sm">06</span>
+                        <h2 class="text-xl font-bold text-slate-900">實務除錯心得（工讀生踩坑經驗分享）</h2>
+                    </div>
+                    <div class="space-y-3 text-xs text-slate-600">
+                        <div class="p-3.5 bg-rose-50 border-l-4 border-rose-500 rounded-r-lg">
+                            <div class="font-bold text-rose-800 mb-1">地雷 1：學校電腦開網頁一直「轉圈圈卡死」</div>
+                            <p class="text-rose-700">
+                                <strong>原因</strong>：代碼中寫死讀取本地 <code>./yolov8n.onnx</code>（12MB），但 GitHub 沒有上傳該檔案；備用國外 CDN 又被學校 TANet 防火牆阻擋。<br>
+                                <strong>解法</strong>：展示端改用分段加載的 <code>coco-ssd</code>，檔案僅 2MB，學校網路與手機 4G/5G 皆能秒開。
+                            </p>
+                        </div>
+
+                        <div class="p-3.5 bg-amber-50 border-l-4 border-amber-500 rounded-r-lg">
+                            <div class="font-bold text-amber-800 mb-1">地雷 2：高解析度街景照片上「標籤字體變米粒」</div>
+                            <p class="text-amber-700">
+                                <strong>原因</strong>：固定設定 <code>font: 14px</code>，遇到 4K 或高解析度圖片時，文字比例縮小到看不見。<br>
+                                <strong>解法</strong>：改採動態比例計算 <code>Math.floor(img.naturalWidth * 0.022)</code>，無論照片多大，字體皆能清晰適配。
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 第七章 -->
+                <section id="ch7" class="bg-white p-6 sm:p-8 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+                        <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-sm">07</span>
+                        <h2 class="text-xl font-bold text-slate-900">下階段後端演進規劃 (Roadmap)</h2>
+                    </div>
+                    <p class="text-xs text-slate-600">
+                        目前前端版本已成功驗證「邊緣辨識可行性」。後續若要承接正式監視器串流，規劃升級之後端架構如下：
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                            <div class="font-bold text-slate-800 mb-1">1. 連續串流介接 (RTSP / RTMP)</div>
+                            <div class="text-slate-500">採用 Python FastAPI + OpenCV 解碼路口監視器即時影格。</div>
+                        </div>
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                            <div class="font-bold text-slate-800 mb-1">2. 動態軌跡追蹤 (ByteTrack)</div>
+                            <div class="text-slate-500">計算車輛行駛向量與車速，精準過濾路邊「靜止停放」之死車。</div>
+                        </div>
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                            <div class="font-bold text-slate-800 mb-1">3. 事件日誌與資料庫 (PostgreSQL)</div>
+                            <div class="text-slate-500">觸發未禮讓行人時，自動保存違規影像截圖並寫入違規資料表。</div>
+                        </div>
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                            <div class="font-bold text-slate-800 mb-1">4. 自訂路口標註模型 (Roboflow)</div>
+                            <div class="text-slate-500">訓練台灣特殊無號誌標線與混流車種專屬權重檔。</div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- 頁尾 -->
+    <footer class="bg-white border-t border-slate-200 py-8 text-center text-xs text-slate-500 mt-16">
+        <p class="font-bold text-slate-700 mb-1">SafeRoad AI 開源公益計畫 - 系統教學手冊</p>
+        <p>本教材專供計畫技術交接、專題成果展示與教育推廣使用。</p>
+    </footer>
+
+</body>
+</html>
