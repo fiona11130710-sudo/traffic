@@ -3,252 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SafeRoad AI | 將既有監視器升級為 AI 交通安全網</title>
+    <title>AlleyWatch AI | 台灣巷弄 AI 交通安全預警系統</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Google 官方輕量化目標檢測引擎 (真實 AI 前端推論，免伺服器、免金鑰、各校園網路不擋) -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+    <!-- ONNX Runtime Web 引擎 -->
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.16.3/dist/ort.min.js"></script>
 
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#2563eb',
-                        danger: '#ef4444',
-                        success: '#10b981',
+                        primary: '#0284c7',
+                        primaryHover: '#0369a1',
                     }
                 }
             }
         }
     </script>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col justify-between">
 
-    <!-- 導覽列 -->
-    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <!-- 頂部導覽列 -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-shield-heart text-blue-600 text-2xl"></i>
-                <span class="font-extrabold text-xl tracking-tight text-slate-900">SafeRoad <span class="text-blue-600">AI</span></span>
-                <span class="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">開源公益方案</span>
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold shadow-md shadow-sky-600/20">
+                    <i class="fa-solid fa-eye"></i>
+                </div>
+                <div>
+                    <span class="font-bold text-lg text-slate-900 tracking-tight">AlleyWatch <span class="text-sky-600">AI</span></span>
+                    <span class="hidden sm:inline-block ml-2 text-xs bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded-full font-medium">台灣巷弄專屬模型</span>
+                </div>
             </div>
-            <div class="flex items-center gap-3 text-sm font-medium">
-                <span id="engineStatus" class="text-xs px-3 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-full font-medium">
-                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> 正在載入 Edge AI 檢測引擎...
-                </span>
-                <a href="tutorial.html" class="hidden sm:inline-block text-xs font-semibold text-slate-600 hover:text-blue-600 border border-slate-300 px-3 py-1.5 rounded-lg transition">技術手冊</a>
-                <a href="#demo" class="hidden sm:inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">一鍵體驗</a>
+            
+            <div id="engineStatus" class="text-xs px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full font-medium flex items-center gap-1.5">
+                <i class="fa-solid fa-spinner fa-spin"></i> YOLOv8 引擎初始化中...
             </div>
-        </div>
-    </nav>
-
-    <!-- 橫幅區 -->
-    <header class="py-16 px-4 max-w-5xl mx-auto text-center">
-        <div class="inline-block px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-semibold mb-4 border border-blue-200">
-            100% 開源公益，守護用路人
-        </div>
-        <h1 class="text-4xl sm:text-5xl font-black text-slate-900 mb-6 leading-tight">
-            將既有監視器 <br>
-            <span class="text-blue-600">升級為 AI 交通安全網</span>
-        </h1>
-        <p class="text-base sm:text-lg text-slate-600 max-w-3xl mx-auto mb-8 leading-relaxed">
-            零硬體採購門檻！SafeRoad AI 是一個致力於減少交通事故的公益專案。透過前端邊緣影像辨識技術，即時捕捉未禮讓行人等危險衝突，協助社區與偏鄉打造安全的交通環境。
-        </p>
-        <div class="flex justify-center gap-4">
-            <a href="#demo" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-md hover:bg-blue-700 transition">
-                <i class="fa-solid fa-camera mr-1"></i> 立即測試照片
-            </a>
-            <a href="#matrix" class="bg-white border border-slate-300 text-slate-700 px-6 py-3 rounded-lg font-bold hover:bg-slate-50 transition">
-                為什麼需要 SafeRoad AI？
-            </a>
         </div>
     </header>
 
-    <!-- 方案比較表 -->
-    <section id="matrix" class="py-12 bg-white border-y border-slate-200">
-        <div class="max-w-5xl mx-auto px-4">
-            <h2 class="text-2xl font-bold text-center text-slate-900 mb-8">為什麼社群需要 SafeRoad AI？</h2>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm border-collapse">
-                    <thead>
-                        <tr class="bg-slate-100 border-b border-slate-200 text-slate-700">
-                            <th class="p-3 font-semibold">比較面向</th>
-                            <th class="p-3 font-semibold">傳統科技執法 / 人工站崗</th>
-                            <th class="p-3 font-semibold text-blue-600">SafeRoad AI (開源公益方案)</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-200 text-slate-600">
-                        <tr>
-                            <td class="p-3 font-medium text-slate-900">建置成本與硬體</td>
-                            <td class="p-3">需採購數百萬專屬攝影機與主機，建置期長。</td>
-                            <td class="p-3 text-blue-700 font-medium">無硬體綁約，可直接串接路口既有 RTSP 監視器。</td>
-                        </tr>
-                        <tr>
-                            <td class="p-3 font-medium text-slate-900">人力需求</td>
-                            <td class="p-3">高度依賴員警路口站崗，或人工回看監視器。</td>
-                            <td class="p-3 text-blue-700 font-medium">AI 24 小時自動化監控，減輕警力與導護負擔。</td>
-                        </tr>
-                        <tr>
-                            <td class="p-3 font-medium text-slate-900">即時性與告警</td>
-                            <td class="p-3">事故發生後才調閱畫面釐清肇責。</td>
-                            <td class="p-3 text-blue-700 font-medium">秒級辨識，可連動警示看板或廣播提醒。</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </section>
-
-    <!-- 核心體驗區 (Demo) -->
-    <section id="demo" class="py-16 px-4 max-w-5xl mx-auto">
-        <div class="text-center mb-6">
-            <h2 class="text-3xl font-extrabold text-slate-900 mb-2">一鍵體驗：交通影像 AI 分析</h2>
-            <p class="text-slate-600 text-sm">
-                上傳路口街景照片，進行即時目標辨識與未禮讓行人衝突檢測。
-            </p>
+    <!-- 主內容區 (左右雙欄 Layout) -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
+        
+        <!-- 頁面副標題 -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-slate-900">巷弄智慧路口安全監測儀表板</h1>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1">針對無號誌路口與狹窄巷弄人車交會情境進行邊緣端 AI 即時偵測</p>
         </div>
 
-        <!-- 模式選擇器 (預設維持最穩定的本機端點推論) -->
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider"><i class="fa-solid fa-sliders text-blue-600 mr-1"></i> 推論模式：</span>
-                    <label class="inline-flex items-center text-xs font-medium cursor-pointer">
-                        <input type="radio" name="inferMode" value="local" checked onchange="switchMode('local')" class="text-blue-600">
-                        <span class="ml-1 text-slate-800 font-bold">端點即時推論 (免金鑰・純前端極速)</span>
-                    </label>
-                    <label class="inline-flex items-center text-xs font-medium cursor-pointer ml-3">
-                        <input type="radio" name="inferMode" value="roboflow" onchange="switchMode('roboflow')" class="text-blue-600">
-                        <span class="ml-1 text-slate-600">Roboflow 自訂模型 API 擴充</span>
-                    </label>
-                </div>
-                <div class="text-xs text-slate-500 font-mono" id="modeDescription">
-                    模式：純前端瀏覽器即時神經網路推論
-                </div>
-            </div>
-
-            <!-- Roboflow 擴充區塊 (預設折疊隱藏，不會干擾) -->
-            <div id="roboflowConfig" class="hidden mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Roboflow Model ID (如 bdd100k-dataset/1)</label>
-                    <input type="text" id="rfModelId" value="bdd100k-dataset/1" class="w-full text-xs p-2 rounded border border-slate-300 focus:border-blue-500 focus:outline-none font-mono">
-                </div>
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Roboflow Private API Key</label>
-                    <input type="password" id="rfApiKey" placeholder="貼上你的 Private API Key" class="w-full text-xs p-2 rounded border border-slate-300 focus:border-blue-500 focus:outline-none font-mono">
-                </div>
-            </div>
-        </div>
-
-        <!-- 上傳框 -->
-        <div id="dropZone" class="bg-white border-2 border-dashed border-slate-300 rounded-xl p-12 text-center hover:border-blue-500 transition cursor-pointer relative shadow-sm">
-            <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-            <i class="fa-solid fa-cloud-arrow-up text-5xl text-blue-500 mb-3"></i>
-            <h3 class="text-lg font-bold text-slate-800">點擊或拖曳圖片至此上傳</h3>
-            <p class="text-xs text-slate-500 mt-1">支援 JPG, PNG 格式路口街景照片</p>
-        </div>
-
-        <!-- 辨識中 -->
-        <div id="loader" class="hidden text-center py-12">
-            <i class="fa-solid fa-spinner fa-spin text-4xl text-blue-600 mb-3"></i>
-            <p class="text-slate-700 font-medium" id="loaderText">AI 模型特徵分析中，請稍候...</p>
-        </div>
-
-        <!-- 結果展示 -->
-        <div id="resultContainer" class="hidden mt-8">
-            <div class="bg-white p-4 rounded-xl shadow-lg border border-slate-200">
-                <div class="overflow-hidden rounded-lg bg-black flex justify-center">
-                    <canvas id="canvas" class="w-full h-auto block"></canvas>
-                </div>
-
-                <!-- 狀態說明條 -->
-                <div class="mt-4 flex flex-wrap items-center justify-between gap-4 p-3 bg-slate-50 rounded-lg text-xs">
-                    <div class="flex items-center gap-4">
-                        <span class="inline-flex items-center gap-1 font-semibold text-red-600">
-                            <span class="w-3 h-3 bg-red-500 rounded-sm"></span> 違規/高風險對象 (未禮讓衝突)
-                        </span>
-                        <span class="inline-flex items-center gap-1 font-semibold text-emerald-600">
-                            <span class="w-3 h-3 bg-emerald-500 rounded-sm"></span> 一般行人/車輛
-                        </span>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- 左側控制面板 (佔 4 欄) -->
+            <div class="lg:col-span-4 space-y-5">
+                
+                <!-- 影像上傳卡片 -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <h2 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-upload text-sky-600"></i> 上傳分析街景
+                    </h2>
+                    
+                    <div id="dropZone" class="border-2 border-dashed border-slate-300 hover:border-sky-500 bg-slate-50 rounded-lg p-6 text-center transition cursor-pointer relative group">
+                        <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                        <i class="fa-solid fa-image text-3xl text-slate-400 group-hover:text-sky-500 transition mb-2"></i>
+                        <p class="text-xs font-semibold text-slate-700">點擊或拖曳照片至此</p>
+                        <p class="text-[11px] text-slate-400 mt-1">支援 JPG, PNG 格式</p>
                     </div>
-                    <div id="inferenceTime" class="text-slate-500 font-mono">推論耗時: -- ms</div>
-                </div>
 
-                <!-- 決策卡片 -->
-                <div id="verdictBox" class="mt-4 p-4 rounded-lg">
-                    <!-- 動態填入 -->
-                </div>
-
-                <div class="text-center mt-6">
-                    <button onclick="resetDemo()" class="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-semibold transition">
-                        重新測試一張
+                    <button id="reUploadBtn" onclick="resetDemo()" class="hidden w-full mt-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> 重新選擇一張圖片
                     </button>
                 </div>
+
+                <!-- 模式設定卡片 -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <h2 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-sky-600"></i> 推論模式設定
+                    </h2>
+                    <div class="space-y-2 text-xs">
+                        <label class="flex items-center p-2.5 rounded-lg border border-slate-200 bg-slate-50/50 cursor-pointer hover:bg-slate-50">
+                            <input type="radio" name="inferMode" value="local_yolo" checked onchange="switchMode('local_yolo')" class="text-sky-600 focus:ring-sky-500">
+                            <span class="ml-2 font-medium text-slate-800">ONNX 邊緣端推論 (best.onnx)</span>
+                        </label>
+                        <label class="flex items-center p-2.5 rounded-lg border border-slate-200 bg-slate-50/50 cursor-pointer hover:bg-slate-50">
+                            <input type="radio" name="inferMode" value="roboflow" onchange="switchMode('roboflow')" class="text-sky-600 focus:ring-sky-500">
+                            <span class="ml-2 font-medium text-slate-800">Roboflow Cloud API</span>
+                        </label>
+                    </div>
+
+                    <!-- Roboflow API 設定（預設隱藏） -->
+                    <div id="roboflowConfig" class="hidden mt-3 pt-3 border-t border-slate-100 space-y-2">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Model ID</label>
+                            <input type="text" id="rfModelId" placeholder="例如：taiwan-traffic-snss3/1" class="w-full text-xs p-2 rounded border border-slate-300 focus:outline-none focus:border-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">API Key</label>
+                            <input type="password" id="rfApiKey" placeholder="貼上 API Key" class="w-full text-xs p-2 rounded border border-slate-300 focus:outline-none focus:border-sky-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 類別圖例說明 -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm text-xs">
+                    <h2 class="font-bold text-slate-800 mb-2.5">辨識類別圖例</h2>
+                    <div class="grid grid-cols-2 gap-2 text-slate-600">
+                        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> 汽車 (car)</div>
+                        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> 機車 (motorcycle)</div>
+                        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 行人 (pedestrian)</div>
+                        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> 大型車 (truck_bus)</div>
+                    </div>
+                </div>
+
             </div>
+
+            <!-- 右側分析結果視窗 (佔 8 欄) -->
+            <div class="lg:col-span-8">
+                
+                <!-- 預設待處理狀態 -->
+                <div id="placeholderState" class="bg-white border border-slate-200 rounded-xl p-16 text-center shadow-sm">
+                    <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 mb-3">
+                        <i class="fa-solid fa-chart-line text-2xl"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-700">等待影像輸入</h3>
+                    <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">請從左側上傳巷弄照片，系統將自動進行物件辨識與近衝突風險評估。</p>
+                </div>
+
+                <!-- 載入中動畫 -->
+                <div id="loader" class="hidden bg-white border border-slate-200 rounded-xl p-16 text-center shadow-sm">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl text-sky-600 mb-3"></i>
+                    <p class="text-sm font-semibold text-slate-700" id="loaderText">AlleyWatch AI 運算中...</p>
+                </div>
+
+                <!-- 辨識結果與分析報告 -->
+                <div id="resultContainer" class="hidden space-y-4">
+                    
+                    <!-- 影像畫布面板 -->
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="overflow-hidden rounded-lg bg-slate-950 flex justify-center border border-slate-200">
+                            <canvas id="canvas" class="w-full h-auto block"></canvas>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between text-xs text-slate-500 px-1 font-mono">
+                            <span id="modeBadge" class="bg-slate-100 px-2 py-0.5 rounded text-slate-600">模式: ONNX WASM</span>
+                            <span id="inferenceTime">推論耗時: -- ms</span>
+                        </div>
+                    </div>
+
+                    <!-- 風險判定診斷卡片 -->
+                    <div id="verdictBox" class="p-4 rounded-xl border transition">
+                        <!-- 動態填入診斷訊息 -->
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
-    </section>
+    </main>
 
     <!-- 頁尾 -->
-    <footer class="bg-white border-t border-slate-200 py-8 text-center text-xs text-slate-500">
-        <p class="font-bold text-slate-700 mb-1">SafeRoad AI 公益計畫 - 源自社群，守護生命</p>
-        <p>這是一個開源展示頁面，旨在推廣利用平民化 AI 科技改善交通環境。</p>
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+        AlleyWatch AI 智慧巷弄安全防護系統 &copy; 2026
     </footer>
 
-    <!-- JavaScript 核心神經網路 -->
+    <!-- JavaScript 運算核心 -->
     <script>
-        let model = null;
-        let currentMode = 'local'; // 預設使用穩定的本機推論
+        let currentMode = 'local_yolo';
+        let yoloSession = null;
         let loadedImage = null;
 
-        const LABEL_MAP = {
-            'person': '行人',
-            'car': '車輛',
-            'motorcycle': '機車',
-            'bus': '公車/客運',
-            'truck': '貨車',
-            'bicycle': '自行車'
+        // Roboflow YOLOv8 按字母排序後的類別對應
+        const CLASS_NAMES = {
+            0: '汽車',     // car
+            1: '機車',     // motorcycle
+            2: '行人',     // pedestrian
+            3: '大型車'    // truck_bus
         };
+
+        const CLASS_COLORS = {
+            0: '#0284c7', // Sky Blue
+            1: '#6366f1', // Indigo
+            2: '#10b981', // Emerald Green
+            3: '#f59e0b'  // Amber
+        };
+
+        const PERSON_ID = 2;
 
         const imageInput = document.getElementById('imageInput');
         const loader = document.getElementById('loader');
+        const placeholderState = document.getElementById('placeholderState');
         const resultContainer = document.getElementById('resultContainer');
         const dropZone = document.getElementById('dropZone');
+        const reUploadBtn = document.getElementById('reUploadBtn');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const verdictBox = document.getElementById('verdictBox');
         const statusEl = document.getElementById('engineStatus');
 
-        // 載入純前端輕量模型 (免金鑰、各校園網路不擋)
-        async function loadModel() {
+        // 1. 初始化模型
+        async function initYOLO() {
             try {
-                model = await cocoSsd.load();
-                statusEl.className = "text-xs px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full font-medium";
-                statusEl.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span> 🟢 Edge AI 檢測引擎就緒';
-            } catch (err) {
-                console.error("模型載入失敗:", err);
-                statusEl.className = "text-xs px-3 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-full font-medium";
-                statusEl.innerText = "🔴 模型載入異常，請重整網頁";
+                yoloSession = await ort.InferenceSession.create('./best.onnx', { executionProviders: ['wasm'] });
+                setStatus("🟢 AlleyWatch AI 模型已就緒 (best.onnx)", "success");
+            } catch (e) {
+                console.warn("未檢測到本機 best.onnx 模型，嘗試備援:", e);
+                try {
+                    yoloSession = await ort.InferenceSession.create('https://cdn.jsdelivr.net/gh/hyuto/yolov8-onnxruntime-web@master/public/model/yolov8n.onnx', { executionProviders: ['wasm'] });
+                    setStatus("🟡 雲端標準模型已就緒 (備援模式)", "warning");
+                } catch (err2) {
+                    setStatus("🔴 未找到 best.onnx 模型檔案", "error");
+                }
             }
         }
-        loadModel();
+        initYOLO();
 
+        function setStatus(text, type) {
+            statusEl.innerText = text;
+            if (type === "success") {
+                statusEl.className = "text-xs px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-medium shadow-sm";
+            } else if (type === "warning") {
+                statusEl.className = "text-xs px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full font-medium shadow-sm";
+            } else {
+                statusEl.className = "text-xs px-3 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-full font-medium shadow-sm";
+            }
+        }
+
+        // 2. 切換模式
         function switchMode(mode) {
             currentMode = mode;
             const configBox = document.getElementById('roboflowConfig');
-            const desc = document.getElementById('modeDescription');
             if (mode === 'roboflow') {
                 configBox.classList.remove('hidden');
-                desc.innerText = "模式：調用 Roboflow 雲端模型 API 進行推論";
             } else {
                 configBox.classList.add('hidden');
-                desc.innerText = "模式：純前端瀏覽器即時神經網路推論";
             }
         }
 
+        // 3. 上傳監聽
         imageInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -259,10 +251,110 @@
             reader.readAsDataURL(file);
         });
 
+        // 4. 前處理 (640x640)
+        function preprocess(img) {
+            const off = document.createElement('canvas');
+            off.width = 640; off.height = 640;
+            const octx = off.getContext('2d');
+            octx.drawImage(img, 0, 0, 640, 640);
+            const imgData = octx.getImageData(0, 0, 640, 640).data;
+            const floatData = new Float32Array(3 * 640 * 640);
+
+            for (let i = 0; i < 640 * 640; i++) {
+                floatData[i] = imgData[i * 4] / 255.0;
+                floatData[640 * 640 + i] = imgData[i * 4 + 1] / 255.0;
+                floatData[2 * 640 * 640 + i] = imgData[i * 4 + 2] / 255.0;
+            }
+            return new ort.Tensor('float32', floatData, [1, 3, 640, 640]);
+        }
+
+        // 5. YOLO 後處理
+        function postprocessYOLO(output, origW, origH) {
+            const [batch, channels, numBoxes] = output.dims;
+            const data = output.data;
+            const boxes = [];
+
+            for (let i = 0; i < numBoxes; i++) {
+                const cx = data[0 * numBoxes + i];
+                const cy = data[1 * numBoxes + i];
+                const w = data[2 * numBoxes + i];
+                const h = data[3 * numBoxes + i];
+
+                let maxScore = -1;
+                let maxClassId = -1;
+                for (let c = 4; c < channels; c++) {
+                    const score = data[c * numBoxes + i];
+                    if (score > maxScore) {
+                        maxScore = score;
+                        maxClassId = c - 4;
+                    }
+                }
+
+                if (maxScore >= 0.35 && maxClassId >= 0 && maxClassId <= 3) {
+                    const rx = ((cx - w / 2) / 640) * origW;
+                    const ry = ((cy - h / 2) / 640) * origH;
+                    const rw = (w / 640) * origW;
+                    const rh = (h / 640) * origH;
+
+                    boxes.push({
+                        classId: maxClassId,
+                        type: maxClassId === PERSON_ID ? 'person' : 'vehicle',
+                        label: CLASS_NAMES[maxClassId] || '目標',
+                        score: maxScore,
+                        bbox: [rx, ry, rw, rh]
+                    });
+                }
+            }
+            return boxes;
+        }
+
+        // 6. Roboflow Cloud API
+        async function inferRoboflow(base64Data, origW, origH) {
+            const modelId = document.getElementById('rfModelId').value.trim();
+            const apiKey = document.getElementById('rfApiKey').value.trim();
+
+            if (!modelId || !apiKey) {
+                alert("請輸入 Roboflow Model ID 與 API Key！");
+                throw new Error("Roboflow credentials missing");
+            }
+
+            const cleanBase64 = base64Data.split(',')[1] || base64Data;
+            const url = `https://detect.roboflow.com/${modelId}?api_key=${apiKey}&confidence=35`;
+
+            const res = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: cleanBase64
+            });
+
+            if (!res.ok) throw new Error(`Roboflow 回傳錯誤: ${res.statusText}`);
+
+            const json = await res.json();
+            const boxes = [];
+
+            (json.predictions || []).forEach(p => {
+                const rx = p.x - p.width / 2;
+                const ry = p.y - p.height / 2;
+                const cls = (p.class || '').toLowerCase();
+                const isPerson = cls.includes('person') || cls.includes('pedestrian');
+                
+                boxes.push({
+                    classId: isPerson ? 2 : 0,
+                    type: isPerson ? 'person' : 'vehicle',
+                    label: p.class,
+                    score: p.confidence,
+                    bbox: [rx, ry, p.width, p.height]
+                });
+            });
+
+            return boxes;
+        }
+
+        // 7. 核心執行流程
         async function processImage(src) {
-            dropZone.classList.add('hidden');
-            loader.classList.remove('hidden');
+            placeholderState.classList.add('hidden');
             resultContainer.classList.add('hidden');
+            loader.classList.remove('hidden');
 
             const img = new Image();
             img.onload = async function() {
@@ -275,153 +367,110 @@
                     let detections = [];
 
                     if (currentMode === 'roboflow') {
-                        document.getElementById('loaderText').innerText = "連線至 Roboflow 模型分析中...";
+                        document.getElementById('loaderText').innerText = "雲端 API 推論中...";
                         detections = await inferRoboflow(src, img.naturalWidth, img.naturalHeight);
                     } else {
-                        document.getElementById('loaderText').innerText = "端點神經網路執行目標邊界特徵推論...";
-                        if (!model) {
-                            model = await cocoSsd.load();
-                        }
-                        const rawPredictions = await model.detect(img);
-
-                        // 巷弄小目標門檻定在 0.3
-                        detections = rawPredictions
-                            .filter(p => p.score >= 0.30 && LABEL_MAP[p.class])
-                            .map(p => ({
-                                type: p.class === 'person' ? 'person' : 'vehicle',
-                                label: LABEL_MAP[p.class],
-                                score: p.score,
-                                bbox: p.bbox
-                            }));
+                        document.getElementById('loaderText').innerText = "AlleyWatch AI 辨識中...";
+                        if (!yoloSession) throw new Error("AI 模型尚未初始化完成");
+                        const inputTensor = preprocess(img);
+                        const results = await yoloSession.run({ images: inputTensor });
+                        const outputTensor = results[yoloSession.outputNames[0]];
+                        detections = postprocessYOLO(outputTensor, img.naturalWidth, img.naturalHeight);
                     }
 
                     const t1 = performance.now();
-                    document.getElementById('inferenceTime').innerText = `推論耗時: ${(t1 - t0).toFixed(0)} ms (${currentMode === 'roboflow' ? 'Roboflow API' : 'Edge WebAssembly'})`;
+                    document.getElementById('inferenceTime').innerText = `推論耗時: ${(t1 - t0).toFixed(0)} ms`;
+                    document.getElementById('modeBadge').innerText = currentMode === 'roboflow' ? 'Roboflow API' : 'ONNX WASM';
 
                     renderResults(detections);
                     loader.classList.add('hidden');
                     resultContainer.classList.remove('hidden');
+                    reUploadBtn.classList.remove('hidden');
 
                 } catch (err) {
                     console.error(err);
-                    alert("推論發生問題: " + err.message);
+                    alert("辨識過程發生錯誤: " + err.message);
                     resetDemo();
                 }
             };
             img.src = src;
         }
 
-        // 串接 Roboflow API
-        async function inferRoboflow(base64Data, origW, origH) {
-            const modelId = document.getElementById('rfModelId').value.trim();
-            const apiKey = document.getElementById('rfApiKey').value.trim();
-
-            if (!modelId || !apiKey) {
-                alert("請填入 Roboflow Model ID 與 Private API Key！若尚未取得，請切回『端點即時推論』模式。");
-                throw new Error("Roboflow 憑證尚未填寫");
-            }
-
-            const cleanBase64 = base64Data.split(',')[1] || base64Data;
-            const url = `https://detect.roboflow.com/${modelId}?api_key=${apiKey}&confidence=28`;
-
-            const res = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: cleanBase64
-            });
-
-            if (!res.ok) {
-                const errText = await res.text();
-                throw new Error(`Roboflow 回傳錯誤: ${errText || res.statusText}`);
-            }
-
-            const json = await res.json();
-            const boxes = [];
-
-            (json.predictions || []).forEach(p => {
-                const rx = p.x - p.width / 2;
-                const ry = p.y - p.height / 2;
-                const cls = (p.class || '').toLowerCase();
-                const isPedestrian = ['person', 'pedestrian', 'rider'].some(k => cls.includes(k));
-                
-                boxes.push({
-                    type: isPedestrian ? 'person' : 'vehicle',
-                    label: p.class,
-                    score: p.confidence,
-                    bbox: [rx, ry, p.width, p.height]
-                });
-            });
-
-            return boxes;
-        }
-
-        // 渲染檢測結果與衝突邏輯
+        // 8. 精緻標註與風險診斷渲染
         function renderResults(boxes) {
             ctx.drawImage(loadedImage, 0, 0);
 
             const hasPerson = boxes.some(b => b.type === 'person');
             const hasVehicle = boxes.some(b => b.type === 'vehicle');
-            const hasConflict = hasPerson && hasVehicle; // 人車同框 = 觸發未禮讓行人風險
+            const hasConflict = hasPerson && hasVehicle; // 人車同框 = 觸發近衝突風險
 
-            const fontSize = Math.max(16, Math.floor(loadedImage.naturalWidth * 0.022));
-            ctx.font = `bold ${fontSize}px sans-serif`;
+            const fontSize = Math.max(14, Math.floor(loadedImage.naturalWidth * 0.02));
+            ctx.font = `500 ${fontSize}px sans-serif`;
             ctx.textBaseline = 'top';
 
             boxes.forEach(item => {
-                const isAlert = hasConflict;
-                const strokeColor = isAlert ? '#ef4444' : '#10b981';
-                const labelText = isAlert 
-                    ? `${item.label} (未禮讓風險 ${Math.round(item.score * 100)}%)`
-                    : `${item.label} (${Math.round(item.score * 100)}%)`;
+                // 如果有衝突風險，使用紅色警示；否則使用該類別原本的質感顏色
+                const strokeColor = hasConflict ? '#ef4444' : (CLASS_COLORS[item.classId] || '#0284c7');
+                const labelText = `${item.label} ${Math.round(item.score * 100)}%`;
 
                 const [rx, ry, rw, rh] = item.bbox;
-                ctx.lineWidth = Math.max(3, Math.floor(loadedImage.naturalWidth * 0.004));
+                
+                // 畫精細外框
+                ctx.lineWidth = Math.max(2, Math.floor(loadedImage.naturalWidth * 0.003));
                 ctx.strokeStyle = strokeColor;
                 ctx.strokeRect(rx, ry, rw, rh);
 
+                // 畫左上角小標籤 (Capsule Tag)
                 const textWidth = ctx.measureText(labelText).width;
-                const padding = fontSize * 0.3;
+                const paddingH = fontSize * 0.4;
+                const paddingV = fontSize * 0.2;
+                
                 ctx.fillStyle = strokeColor;
-                ctx.fillRect(rx, ry - fontSize - (padding * 2), textWidth + (padding * 2), fontSize + (padding * 2));
+                ctx.beginPath();
+                ctx.roundRect(rx, Math.max(0, ry - fontSize - (paddingV * 2)), textWidth + (paddingH * 2), fontSize + (paddingV * 2), 4);
+                ctx.fill();
 
                 ctx.fillStyle = '#ffffff';
-                ctx.fillText(labelText, rx + padding, ry - fontSize - padding);
+                ctx.fillText(labelText, rx + paddingH, Math.max(paddingV, ry - fontSize - paddingV));
             });
 
+            // 診斷卡片
             if (hasConflict) {
-                verdictBox.className = "mt-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800";
+                verdictBox.className = "p-4 rounded-xl bg-red-50 border border-red-200 text-red-900";
                 verdictBox.innerHTML = `
-                    <div class="flex items-center gap-2 font-bold text-base mb-1">
+                    <div class="flex items-center gap-2 font-bold text-sm mb-1 text-red-700">
                         <i class="fa-solid fa-triangle-exclamation text-red-600"></i>
-                        <span>高風險告警：偵測到路口人車交會（未禮讓行人風險）</span>
+                        <span>高風險告警：偵測到人車同框交會（近衝突風險）</span>
                     </div>
-                    <p class="text-xs text-red-700">
-                        AI 於畫面中同時鎖定行人與通行車輛。系統啟動行人防護預警，提醒車輛務必於斑馬線與路口前完全煞停禮讓！
+                    <p class="text-xs text-red-600 leading-relaxed">
+                        系統於畫面中同時鎖定行人與通行車輛，建議啟動路口警示宣導，提醒車輛減速停讓。
                     </p>
                 `;
             } else if (hasPerson || hasVehicle) {
-                verdictBox.className = "mt-4 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800";
+                verdictBox.className = "p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900";
                 verdictBox.innerHTML = `
-                    <div class="flex items-center gap-2 font-bold text-base mb-1">
+                    <div class="flex items-center gap-2 font-bold text-sm mb-1 text-emerald-700">
                         <i class="fa-solid fa-circle-check text-emerald-600"></i>
-                        <span>常態通行：路況安全無立即衝突</span>
+                        <span>常態通行：路況無立即交會衝突</span>
                     </div>
-                    <p class="text-xs text-emerald-700">
-                        未偵測到人車交會之碰撞風險，用路人維持正常行駛。
+                    <p class="text-xs text-emerald-600 leading-relaxed">
+                        畫面中未發現人車交會狀況，用路人維持正常行駛。
                     </p>
                 `;
             } else {
-                verdictBox.className = "mt-4 p-4 rounded-lg bg-slate-100 border border-slate-200 text-slate-700";
+                verdictBox.className = "p-4 rounded-xl bg-slate-100 border border-slate-200 text-slate-700";
                 verdictBox.innerHTML = `
-                    <div class="font-bold text-sm mb-1">未檢驗出活動目標</div>
-                    <p class="text-xs text-slate-500">畫面中無辨識到行人或車輛。</p>
+                    <div class="font-bold text-xs mb-0.5 text-slate-600">未偵測到活動目標</div>
+                    <p class="text-[11px] text-slate-500">畫面中無辨識出車輛或行人。</p>
                 `;
             }
         }
 
         function resetDemo() {
             resultContainer.classList.add('hidden');
-            dropZone.classList.remove('hidden');
+            loader.classList.add('hidden');
+            placeholderState.classList.remove('hidden');
+            reUploadBtn.classList.add('hidden');
             imageInput.value = '';
             loadedImage = null;
         }
